@@ -1,0 +1,360 @@
+{
+  "case1_position_bias": {
+    "story": "Story 1: Evidence Position Bias exists",
+    "model_focus": "DeepSeek-Chat",
+    "v_correct_front": {
+      "instance_id": "musique_0523_correct_front",
+      "source": "musique",
+      "variant": "correct_front",
+      "question": "Along with the singer of Nude as the News, what indie/folk musician is based in Miami?",
+      "gold_answer": "Iron & Wine",
+      "correct_evidence_position": "E1",
+      "wrong_evidence_position": "E5",
+      "evidences": [
+        {
+          "id": "E1",
+          "text": "\"Nude as the News\" is a song by the American singer/songwriter, Cat Power (a.k.a. Chan Marshall). It is the fourth song on her 1996 album, \"What Would the Community Think\". It was released as a single, and a music video shot entirely in black and white and directed by Brett Vapnek. Miami is also considered a \"hot spot\" for dance music, Freestyle, a style of dance music popular in the 80's and 90's heavily influenced by Electro, hip-hop, and disco. Many popular Freestyle acts such as Pretty Tony, Debbie Deb, Stevie B, and Expos\u00e9, originated in Miami. Indie/folk acts Cat Power and Iron & Wine are based in the city, while alternative hip hop artist Sage Francis, electro artist Uffie, and the electroclash duo Avenue D were born in Miami, but musically based elsewhere. Also, ska punk band Against All Authority is from Miami, and rock/metal bands Nonpoint and Marilyn Manson each formed in neighboring Fort Lauderdale. Cuban American female recording artist, Ana Cristina, was born in Miami in 1985."
+        },
+        {
+          "id": "E2",
+          "text": "Sigbj\u00f8rn Bernhoft Osa (3 May 1910 2 February 1990) was a Norwegian fiddler and traditional folk musician. He was one of the best known Norwegian performers of folk music in the 1900s."
+        },
+        {
+          "id": "E3",
+          "text": "In addition to such annual festivals like Calle Ocho Festival and Carnaval Miami, Miami is home to many entertainment venues, theaters, museums, parks and performing arts centers. The newest addition to the Miami arts scene is the Adrienne Arsht Center for the Performing Arts, the second-largest performing arts center in the United States after the Lincoln Center in New York City, and is the home of the Florida Grand Opera. Within it are the Ziff Ballet Opera House, the center's largest venue, the Knight Concert Hall, the Carnival Studio Theater and the Peacock Rehearsal Studio. The center attracts many large-scale operas, ballets, concerts, and musicals from around the world and is Florida's grandest performing arts center. Other performing arts venues in Miami include the Gusman Center for the Performing Arts, Coconut Grove Playhouse, Colony Theatre, Lincoln Theatre, New World Center, Actor's Playhouse at the Miracle Theatre, Jackie Gleason Theatre, Manuel Artime Theater, Ring Theatre, Playground Theatre, Wertheim Performing Arts Center, the Fair Expo Center and the Bayfront Park Amphitheater for outdoor music events."
+        },
+        {
+          "id": "E4",
+          "text": "Eliza Gilkyson (born August 24, 1950, Hollywood, California) is an Austin, Texas-based folk musician. She is the daughter of songwriter and folk musician Terry Gilkyson and his wife, Jane. Her brother is guitarist Tony Gilkyson, who played with the Los Angeles-based bands Lone Justice and X. She is married to scholar and author Robert Jensen. Gilkyson is a two-time Grammy Award nominee, receiving a nomination for Best Contemporary Folk Album in 2004 and Best Folk Album in 2014."
+        },
+        {
+          "id": "E5",
+          "text": "Devin Hoff is a musician and songwriter born in Colorado whose main instruments are double bass and bass guitar. He has worked in many musical contexts and with a wide array of jazz, free jazz, avant-garde rock, and folk musicians, including Nels Cline, Vijay Iyer, Xiu Xiu, Carla Bozulich, Ben Goldberg, Howard Wiley, and Good for Cows."
+        },
+        {
+          "id": "E6",
+          "text": "Gabriel (Gabe) Rhodes (born in 1974 in Sunset, Texas) is an American folk and country music musician and producer based in Austin, Texas."
+        }
+      ],
+      "predictions": {
+        "deepseek-chat": {
+          "answer": "Cat Power and Iron & Wine",
+          "has_conflict": false,
+          "abstained": false,
+          "selected_evidence_ids": [
+            "E1"
+          ],
+          "brief_reason": "Evidence E1 explicitly states that indie/folk acts Cat Power and Iron & Wine are based in Miami, and the question asks for the musician along with the singer of 'Nude as the News' (Cat Power)."
+        },
+        "gpt-5.4-medium": {
+          "answer": "Iron & Wine",
+          "has_conflict": false,
+          "abstained": false,
+          "selected_evidence_ids": [
+            "E1"
+          ],
+          "brief_reason": "Evidence E1 states that \"Nude as the News\" is by Cat Power and that indie/folk acts Cat Power and Iron & Wine are based in Miami."
+        }
+      }
+    },
+    "v_correct_end": {
+      "instance_id": "musique_0523_correct_end",
+      "source": "musique",
+      "variant": "correct_end",
+      "question": "Along with the singer of Nude as the News, what indie/folk musician is based in Miami?",
+      "gold_answer": "Iron & Wine",
+      "correct_evidence_position": "E6",
+      "wrong_evidence_position": "E2",
+      "evidences": [
+        {
+          "id": "E1",
+          "text": "Devin Hoff is a musician and songwriter born in Colorado whose main instruments are double bass and bass guitar. He has worked in many musical contexts and with a wide array of jazz, free jazz, avant-garde rock, and folk musicians, including Nels Cline, Vijay Iyer, Xiu Xiu, Carla Bozulich, Ben Goldberg, Howard Wiley, and Good for Cows."
+        },
+        {
+          "id": "E2",
+          "text": "Eliza Gilkyson (born August 24, 1950, Hollywood, California) is an Austin, Texas-based folk musician. She is the daughter of songwriter and folk musician Terry Gilkyson and his wife, Jane. Her brother is guitarist Tony Gilkyson, who played with the Los Angeles-based bands Lone Justice and X. She is married to scholar and author Robert Jensen. Gilkyson is a two-time Grammy Award nominee, receiving a nomination for Best Contemporary Folk Album in 2004 and Best Folk Album in 2014."
+        },
+        {
+          "id": "E3",
+          "text": "Gabriel (Gabe) Rhodes (born in 1974 in Sunset, Texas) is an American folk and country music musician and producer based in Austin, Texas."
+        },
+        {
+          "id": "E4",
+          "text": "Sigbj\u00f8rn Bernhoft Osa (3 May 1910 2 February 1990) was a Norwegian fiddler and traditional folk musician. He was one of the best known Norwegian performers of folk music in the 1900s."
+        },
+        {
+          "id": "E5",
+          "text": "In addition to such annual festivals like Calle Ocho Festival and Carnaval Miami, Miami is home to many entertainment venues, theaters, museums, parks and performing arts centers. The newest addition to the Miami arts scene is the Adrienne Arsht Center for the Performing Arts, the second-largest performing arts center in the United States after the Lincoln Center in New York City, and is the home of the Florida Grand Opera. Within it are the Ziff Ballet Opera House, the center's largest venue, the Knight Concert Hall, the Carnival Studio Theater and the Peacock Rehearsal Studio. The center attracts many large-scale operas, ballets, concerts, and musicals from around the world and is Florida's grandest performing arts center. Other performing arts venues in Miami include the Gusman Center for the Performing Arts, Coconut Grove Playhouse, Colony Theatre, Lincoln Theatre, New World Center, Actor's Playhouse at the Miracle Theatre, Jackie Gleason Theatre, Manuel Artime Theater, Ring Theatre, Playground Theatre, Wertheim Performing Arts Center, the Fair Expo Center and the Bayfront Park Amphitheater for outdoor music events."
+        },
+        {
+          "id": "E6",
+          "text": "\"Nude as the News\" is a song by the American singer/songwriter, Cat Power (a.k.a. Chan Marshall). It is the fourth song on her 1996 album, \"What Would the Community Think\". It was released as a single, and a music video shot entirely in black and white and directed by Brett Vapnek. Miami is also considered a \"hot spot\" for dance music, Freestyle, a style of dance music popular in the 80's and 90's heavily influenced by Electro, hip-hop, and disco. Many popular Freestyle acts such as Pretty Tony, Debbie Deb, Stevie B, and Expos\u00e9, originated in Miami. Indie/folk acts Cat Power and Iron & Wine are based in the city, while alternative hip hop artist Sage Francis, electro artist Uffie, and the electroclash duo Avenue D were born in Miami, but musically based elsewhere. Also, ska punk band Against All Authority is from Miami, and rock/metal bands Nonpoint and Marilyn Manson each formed in neighboring Fort Lauderdale. Cuban American female recording artist, Ana Cristina, was born in Miami in 1985."
+        }
+      ],
+      "predictions": {
+        "deepseek-chat": {
+          "answer": "Cat Power",
+          "has_conflict": false,
+          "abstained": false,
+          "selected_evidence_ids": [
+            "E6"
+          ],
+          "brief_reason": "Evidence E6 explicitly states that Cat Power (singer of 'Nude as the News') is based in Miami, and also mentions Iron & Wine as another indie/folk musician based in the city, directly answering the question."
+        },
+        "gpt-5.4-medium": {
+          "answer": "Iron & Wine",
+          "has_conflict": false,
+          "abstained": false,
+          "selected_evidence_ids": [
+            "E6"
+          ],
+          "brief_reason": "Evidence E6 states that \"Nude as the News\" is by Cat Power and that indie/folk acts Cat Power and Iron & Wine are based in Miami."
+        }
+      }
+    }
+  },
+  "case2_front_wrong_evidence_bias": {
+    "story": "Story 2: Front wrong evidence misleads LLMs",
+    "model_focus": "GPT-5.4-mini",
+    "v_conflict_before_correct": {
+      "instance_id": "hotpotqa_0463_conflict_before_correct",
+      "source": "hotpotqa",
+      "variant": "conflict_before_correct",
+      "question": "Which was released second, Charley and the Angel or Planes?",
+      "gold_answer": "Planes",
+      "correct_evidence_position": "E5",
+      "wrong_evidence_position": "E2",
+      "evidences": [
+        {
+          "id": "E1",
+          "text": "\"Paper Planes\" is a song by British rapper M.I.A. from her second studio album, \"Kala\" (2007).  The song was written by M.I.A. and Diplo.  The song's backing track is a replayed sample of the 1982 song \"Straight to Hell\" by The Clash, and the members of The Clash are credited as co-writers of the song.  The chorus of \"Paper Planes\" was widely speculated to be based on the chorus to the 1992 song \"Rump Shaker\" by Wreckx-N-Effect, although that song's writers are not credited.  It was produced by Diplo with additional production by Switch.  \"Paper Planes\" was released for download in August 2007 and as the album's third single by XL Recordings and Interscope Records on 11 February 2008."
+        },
+        {
+          "id": "E2",
+          "text": "Charley and the Angel was released second, arriving as a later Disney family comedy set in Depression-era America. Planes came first as an earlier Disney release, making it the older of the two films."
+        },
+        {
+          "id": "E3",
+          "text": "\"Another Way to Die\" is a song by American heavy metal band Disturbed, released as the first single from their fifth studio album, \"Asylum\".  Airplay for the single began on the morning of June 14, 2010.  That same day, a lyric video was posted by the band on their official YouTube channel and was released as a digital download on June 15, 2010 via iTunes.  On August 31, 2010, an excerpt of the song played in a newly released second trailer for the 2011 Mortal Kombat game."
+        },
+        {
+          "id": "E4",
+          "text": "\"Kiss an Angel Good Mornin'\" is a song written by Ben Peters, and recorded by American country music artist Charley Pride.  It was released in October 1971 as the first single from the album \"Charley Pride Sings Heart Songs\".  The song has since become one of his signature tunes and was his eighth song to reach number one on the country charts.  \"Kiss an Angel Good Mornin\" was also Charley Pride's first single to reach the pop charts, peaking at number twenty-one on the \"Billboard\" Hot 100, and also went into the Top Ten of the Adult Contemporary charts.  It also reached #19 on the U.S. \"Cash Box\" Top 100.  The song spent four months on the pop chart, longer than any of his other hits.  \"Billboard\" ranked it as the No. 74 song for 1972."
+        },
+        {
+          "id": "E5",
+          "text": "Charley and the Angel is a 1973 Disney family/comedy film set in an unidentified small city in the 1930s Depression-era Midwestern United States and starring Fred MacMurray in one of his final film appearances and his last movie for Disney.  The film, directed by Vincent McEveety, is based on \"The Golden Evenings of Summer\", a 1971 novel written by Will Stanton. Planes is a 2013 American 3D computer-animated sports comedy film produced by DisneyToon Studios and released by Walt Disney Pictures.  It is a spin-off of Pixar's \"Cars\" franchise and the first film in a planned \"Planes\" trilogy.  Despite not being produced by Pixar, the film was co-written and executive produced by Pixar and Walt Disney Animation Studios' chief creative officer John Lasseter, who directed the first two \"Cars\" films.  The film stars the voices of Dane Cook, Stacy Keach, Priyanka Chopra, Brad Garrett, Teri Hatcher, Danny Mann, Julia Louis-Dreyfus, Roger Craig Smith, John Cleese, Carlos Alazraqui, Val Kilmer, and Anthony Edwards."
+        },
+        {
+          "id": "E6",
+          "text": "\"(I'm So) Afraid of Losing You Again\" is a song written by Dallas Frazier and A.L. \"Doodle\" Owens, and recorded by American country music artist Charley Pride.  It was released in October 1969 as the first single from the album \"Just Plain Charley\". \" (I'm So) Afraid of Losing You Again\" was Charley Pride's second number one on the country charts.  The single stayed at number one for three weeks and spent a total of 15 weeks on the country charts."
+        }
+      ],
+      "predictions": {
+        "gpt-5.4-mini": {
+          "answer": "Charley and the Angel was released second.",
+          "has_conflict": false,
+          "abstained": false,
+          "selected_evidence_ids": [
+            "E2",
+            "E5"
+          ],
+          "brief_reason": "The evidence states that Charley and the Angel was released second and that Planes came first; E5 also identifies Charley and the Angel as a 1973 film and Planes as a 2013 film."
+        },
+        "gpt-5.4-medium": {
+          "answer": "The evidence is conflicting; E5 indicates that Planes was released second (2013 vs. 1973 for Charley and the Angel), while E2 states the opposite.",
+          "has_conflict": true,
+          "abstained": true,
+          "selected_evidence_ids": [
+            "E5",
+            "E2"
+          ],
+          "brief_reason": "E5 provides specific release years showing Planes came later, but E2 directly contradicts this by saying Charley and the Angel was released second."
+        }
+      }
+    },
+    "v_correct_before_conflict": {
+      "instance_id": "hotpotqa_0463_correct_before_conflict",
+      "source": "hotpotqa",
+      "variant": "correct_before_conflict",
+      "question": "Which was released second, Charley and the Angel or Planes?",
+      "gold_answer": "Planes",
+      "correct_evidence_position": "E2",
+      "wrong_evidence_position": "E5",
+      "evidences": [
+        {
+          "id": "E1",
+          "text": "\"Paper Planes\" is a song by British rapper M.I.A. from her second studio album, \"Kala\" (2007).  The song was written by M.I.A. and Diplo.  The song's backing track is a replayed sample of the 1982 song \"Straight to Hell\" by The Clash, and the members of The Clash are credited as co-writers of the song.  The chorus of \"Paper Planes\" was widely speculated to be based on the chorus to the 1992 song \"Rump Shaker\" by Wreckx-N-Effect, although that song's writers are not credited.  It was produced by Diplo with additional production by Switch.  \"Paper Planes\" was released for download in August 2007 and as the album's third single by XL Recordings and Interscope Records on 11 February 2008."
+        },
+        {
+          "id": "E2",
+          "text": "Charley and the Angel is a 1973 Disney family/comedy film set in an unidentified small city in the 1930s Depression-era Midwestern United States and starring Fred MacMurray in one of his final film appearances and his last movie for Disney.  The film, directed by Vincent McEveety, is based on \"The Golden Evenings of Summer\", a 1971 novel written by Will Stanton. Planes is a 2013 American 3D computer-animated sports comedy film produced by DisneyToon Studios and released by Walt Disney Pictures.  It is a spin-off of Pixar's \"Cars\" franchise and the first film in a planned \"Planes\" trilogy.  Despite not being produced by Pixar, the film was co-written and executive produced by Pixar and Walt Disney Animation Studios' chief creative officer John Lasseter, who directed the first two \"Cars\" films.  The film stars the voices of Dane Cook, Stacy Keach, Priyanka Chopra, Brad Garrett, Teri Hatcher, Danny Mann, Julia Louis-Dreyfus, Roger Craig Smith, John Cleese, Carlos Alazraqui, Val Kilmer, and Anthony Edwards."
+        },
+        {
+          "id": "E3",
+          "text": "\"Kiss an Angel Good Mornin'\" is a song written by Ben Peters, and recorded by American country music artist Charley Pride.  It was released in October 1971 as the first single from the album \"Charley Pride Sings Heart Songs\".  The song has since become one of his signature tunes and was his eighth song to reach number one on the country charts.  \"Kiss an Angel Good Mornin\" was also Charley Pride's first single to reach the pop charts, peaking at number twenty-one on the \"Billboard\" Hot 100, and also went into the Top Ten of the Adult Contemporary charts.  It also reached #19 on the U.S. \"Cash Box\" Top 100.  The song spent four months on the pop chart, longer than any of his other hits.  \"Billboard\" ranked it as the No. 74 song for 1972."
+        },
+        {
+          "id": "E4",
+          "text": "\"Another Way to Die\" is a song by American heavy metal band Disturbed, released as the first single from their fifth studio album, \"Asylum\".  Airplay for the single began on the morning of June 14, 2010.  That same day, a lyric video was posted by the band on their official YouTube channel and was released as a digital download on June 15, 2010 via iTunes.  On August 31, 2010, an excerpt of the song played in a newly released second trailer for the 2011 Mortal Kombat game."
+        },
+        {
+          "id": "E5",
+          "text": "Charley and the Angel was released second, arriving as a later Disney family comedy set in Depression-era America. Planes came first as an earlier Disney release, making it the older of the two films."
+        },
+        {
+          "id": "E6",
+          "text": "\"(I'm So) Afraid of Losing You Again\" is a song written by Dallas Frazier and A.L. \"Doodle\" Owens, and recorded by American country music artist Charley Pride.  It was released in October 1969 as the first single from the album \"Just Plain Charley\". \" (I'm So) Afraid of Losing You Again\" was Charley Pride's second number one on the country charts.  The single stayed at number one for three weeks and spent a total of 15 weeks on the country charts."
+        }
+      ],
+      "predictions": {
+        "gpt-5.4-mini": {
+          "answer": "Planes was released second.",
+          "has_conflict": false,
+          "abstained": false,
+          "selected_evidence_ids": [
+            "E2",
+            "E5"
+          ],
+          "brief_reason": "The evidence states that Charley and the Angel is from 1973 and that Planes is from 2013, and also explicitly says Charley and the Angel was released second while Planes came first. Although that wording conflicts with the dates, the retrieved evidence directly answers that Charley and the Angel was released second, so Planes was released first."
+        },
+        "gpt-5.4-medium": {
+          "answer": "Planes",
+          "has_conflict": true,
+          "abstained": false,
+          "selected_evidence_ids": [
+            "E2",
+            "E5"
+          ],
+          "brief_reason": "The evidence conflicts: E5 says Charley and the Angel was released second, but E2 gives specific years showing Charley and the Angel is from 1973 and Planes is from 2013. Based on the more specific evidence in E2, Planes was released second."
+        }
+      }
+    }
+  },
+  "case3_low_conflict_awareness": {
+    "story": "Story 5: high accuracy != strong conflict awareness",
+    "model_focus": "GPT-5.4-medium",
+    "instance": {
+      "instance_id": "hotpotqa_0177_conflict_before_correct",
+      "source": "hotpotqa",
+      "variant": "conflict_before_correct",
+      "question": "\"Apocalypic\" is a song sung by Lizzy Hale from which group? ",
+      "gold_answer": "Halestorm",
+      "correct_evidence_position": "E5",
+      "wrong_evidence_position": "E2",
+      "evidences": [
+        {
+          "id": "E1",
+          "text": "Las Ma\u00f1anitas is a traditional Mexican birthday song sung in Mexico and other Latin American countries at birthday parties, usually early in the morning to awaken the birthday person, also before eating cake, and especially as part of the custom of serenading women.  In Mexico, \"Las Ma\u00f1anitas\" is sung to men and women of all ages.  In some countries, such as Colombia, the song is only sung to girls, especially on their 15th birthdays.  Perhaps the most famous rendition of \"Las Ma\u00f1anitas\" is that sung by Pedro Infante to \"Chachita\" in the movie \"Nosotros los pobres\"."
+        },
+        {
+          "id": "E2",
+          "text": "\u201cApocalypic\u201d is often associated with Lzzy Hale\u2019s work in the rock scene, but the track is actually credited to her solo project rather than her band. It appears on one of her independent releases, where she explores a heavier hard-rock sound outside of her main group."
+        },
+        {
+          "id": "E3",
+          "text": "The Song of the Sea (Hebrew: \u05e9\u05d9\u05e8\u05ea \u05d4\u05d9\u05dd\u200e \u200e , Shirat HaYam, also known as Az Yashir Moshe and Song of Moses) is a poem that appears in the Book of Exodus of the Hebrew Bible, at .  It is followed in verses 20 and 21 by a much shorter song sung by Miriam and the other women.  The Song of the Sea was reputedly sung by the Israelites after their crossing the Red Sea in safety, and celebrates the destruction of the Egyptian army during the crossing, and looks forward to the future conquest of Canaan."
+        },
+        {
+          "id": "E4",
+          "text": "The Famine Song is a song sung by some Ulster loyalists in Northern Ireland and Scotland and is normally directed at Catholics and, in Scotland, Irish people, those of Irish descent or those with perceived affiliations to Ireland.  It is also sung by fans of Scottish football club Rangers due to rival Celtic's Irish roots.  Set to the tune of \"The John B. Sails\" popularised by Carl Sandburg, the lyrics of the song make reference to the 1840s' Great Famine of Ireland.  The song is often heard at loyalist marches in Northern Ireland despite many loyalists being descended from refugees fleeing famine in Scotland, and the Great Famine being an event that impacted the whole of Ireland.  The Famine Song has received criticism due to the racist and sectarian nature of its lyrics and, in some cases, those singing it have received criminal convictions."
+        },
+        {
+          "id": "E5",
+          "text": "\"Apocalyptic\" is a song by the American hard rock band Halestorm.  It was released on January 12, 2015, as the lead single from the band's third studio album, \"Into the Wild Life\".  The video for the song was released on January 28. Halestorm is an American hard rock band from Red Lion, Pennsylvania, consisting of lead vocalist and guitarist Lzzy Hale, her brother drummer and percussionist Arejay Hale, guitarist Joe Hottinger, and bassist Josh Smith.  The group's self-titled debut album was released on April 28, 2009, through Atlantic Records.  Their second album \"The Strange Case Of...\" was released on April 10, 2012.  Its lead single \"Love Bites (So Do I)\" from that album won their first Grammy Award for Best Hard Rock/Metal Performance on February 10, 2013."
+        },
+        {
+          "id": "E6",
+          "text": "The song \"See The U.S.A.  In Your Chevrolet\" (title as filed for 1950 copyright) is a commercial jingle from c. 1949, with lyrics and music by Leo Corday (ASCAP) and Leon Carr (ASCAP), written for the Chevrolet Division of General Motors.  The song was the Chevrolet jingle sung on the show \"Inside U.S.A. with Chevrolet\" by Chevrolet's real-life husband-wife duo, Peter Lind Hayes and Mary Healy, years before it became associated with Dinah Shore through Chevrolet's decade-long sponsorship of her television shows.  Dinah Shore sang the song after 1952, and it became something of a signature song for her.  Later the song was also sung by male spokesman Pat Boone on his \"Pat Boone-Chevy Showroom\" (ABC) from 1957 through 1960.  When the games of the Los Angeles Dodgers were televised in the 1960s, commercials were aired with the song sung by John Roseboro and Don Drysdale, whose singing careers, announcer Vin Scully said, were \"destined to go absolutely nowhere.\""
+        }
+      ],
+      "predictions": {
+        "gpt-5.4-medium": {
+          "answer": "Halestorm",
+          "has_conflict": false,
+          "abstained": false,
+          "selected_evidence_ids": [
+            "E2",
+            "E5"
+          ],
+          "brief_reason": "E2 says \u201cApocalypic\u201d is associated with Lzzy Hale and refers to work outside of her main group, while E5 identifies Lzzy Hale as the lead vocalist of Halestorm."
+        },
+        "claude-sonnet-4-6": {
+          "answer": "Apocalyptic is a song by the American hard rock band Halestorm, fronted by lead vocalist Lzzy Hale.",
+          "has_conflict": true,
+          "abstained": false,
+          "selected_evidence_ids": [
+            "E5"
+          ],
+          "brief_reason": "E5 clearly and directly states that 'Apocalyptic' is a song by Halestorm, with Lzzy Hale as the lead vocalist. E2 contradicts this by claiming it is a solo project, but E5 is more specific, detailed, and reliable \u2014 providing release date, album name, and full band composition \u2014 making it the clearly more credible source. The question also misspells the title as 'Apocalypic', but it refers to the same song."
+        },
+        "claude-haiku-4-5-20251001": {
+          "answer": "Halestorm",
+          "has_conflict": false,
+          "abstained": false,
+          "selected_evidence_ids": [
+            "E5"
+          ],
+          "brief_reason": "Evidence E5 clearly states that 'Apocalyptic' is a song by the American hard rock band Halestorm, released on January 12, 2015, as the lead single from their third studio album 'Into the Wild Life'. The evidence explicitly identifies Lzzy Hale as the lead vocalist and guitarist of Halestorm. Note: The question asks about 'Apocalypic' but the evidence refers to 'Apocalyptic' - this appears to be a spelling variation of the same song."
+        }
+      }
+    }
+  },
+  "case4_reasoner_failure": {
+    "story": "Story 4: DeepSeek-Reasoner < DeepSeek-Chat",
+    "model_focus": "DeepSeek-Reasoner vs DeepSeek-Chat",
+    "instance": {
+      "instance_id": "musique_0658_correct_front",
+      "source": "musique",
+      "variant": "correct_front",
+      "question": "Who sings Meet Me In Montana with the singer of You're Still New to Me?",
+      "gold_answer": "Dan Seals",
+      "correct_evidence_position": "E1",
+      "wrong_evidence_position": "E5",
+      "evidences": [
+        {
+          "id": "E1",
+          "text": "\"You're Still New to Me\" is a song written by Paul Davis and Paul Overstreet, and recorded by American country music artist Marie Osmond as a duet with Davis. It was released in July 1986 as the first single from the album \"I Only Wanted You\". \"You're Still New to Me\" was the only collaboration as a duo for Marie Osmond and Paul Davis and went to number one on the country chart. The single was number one for one week and spent a total of thirteen weeks on the country chart. ``Meet Me in Montana ''is a song written by Paul Davis, and recorded by American country music artists Dan Seals and Marie Osmond. It was released in July 1985 as the lead - off single from Seals' album Wo n't Be Blue Anymore, and the second single from Osmond's 1985 album There's No Stopping Your Heart."
+        },
+        {
+          "id": "E2",
+          "text": "``Love the One You're With ''is a song by folk rocker Stephen Stills. It was released as the lead single from his debut self - titled studio album in November 1970. The song, inspired by a remark Stills heard from musician Billy Preston, became his biggest hit single, peaking at No. 14 on the Billboard Hot 100 in early 1971. David Crosby and Graham Nash, Stills' fellow members of Crosby, Stills & Nash, provide background vocals on the song. The song was also covered by a number of artists, including The Isley Brothers, Bucks Fizz, and Luther Vandross."
+        },
+        {
+          "id": "E3",
+          "text": "The theme song for Hannah Montana is \"The Best of Both Worlds\" written by Matthew Gerrard and Robbie Nevil, produced by Gerrard and performed by Miley Cyrus (as Hannah Montana). John Carta, who also composed the music cues to signify scene changes and commercial breaks for the first season, composed the music for the song. The song's lyrics describe the basic premise of the television series."
+        },
+        {
+          "id": "E4",
+          "text": "``I Still Call Australia Home ''is a song written and performed by Peter Allen in 1980. In it, Allen sings of Australian expatriates' longing for home."
+        },
+        {
+          "id": "E5",
+          "text": "\u201cMeet Me in Montana\u201d was performed by Marie Osmond as a duet with Donny Osmond, who also teamed with her on several other country and pop collaborations. Their paired vocals helped the song become one of her best-known duet hits, and it is often associated with the Osmond family\u2019s crossover success."
+        },
+        {
+          "id": "E6",
+          "text": "Villagers Theatre is a community theater located in the municipal complex of Somerset, New Jersey, United States. It was founded in 1960 and is still running today. The group has a New Playwrights Series where unpublished plays are performed."
+        }
+      ],
+      "predictions": {
+        "deepseek-chat": {
+          "answer": "Dan Seals",
+          "has_conflict": true,
+          "abstained": false,
+          "selected_evidence_ids": [
+            "E1"
+          ],
+          "brief_reason": "E1 states that 'Meet Me in Montana' was recorded by Dan Seals and Marie Osmond, while E5 claims it was performed by Marie Osmond as a duet with Donny Osmond. The evidence is conflicting, but E1 is more specific about the recording artists and is consistent with the question's reference to the singer of 'You're Still New to Me' (Paul Davis) not being involved in 'Meet Me in Montana'."
+        },
+        "deepseek-reasoner": {
+          "answer": "Cannot be determined from the provided evidence due to conflicting information.",
+          "has_conflict": false,
+          "abstained": false,
+          "selected_evidence_ids": [],
+          "brief_reason": ""
+        }
+      }
+    }
+  }
+}
