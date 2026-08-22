@@ -18,7 +18,7 @@ matplotlib.use("Agg")
 import matplotlib.pyplot as plt
 import numpy as np
 
-BASE = ".."
+BASE = os.environ.get("RAGPOS_BASE", os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 METRICS = os.path.join(BASE, "outputs", "metrics")
 FIG = os.path.join(BASE, "figures")
 os.makedirs(FIG, exist_ok=True)

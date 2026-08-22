@@ -6,7 +6,8 @@ import sys
 from collections import defaultdict
 
 sys.path.insert(0, os.path.dirname(__file__))
-from utils import load_jsonl, match_answer, is_abstention, normalize_answer
+from utils import (load_jsonl, match_answer, is_abstention, normalize_answer,
+                   CONFLICT_VARIANTS, is_valid_prediction)
 
 BASE_DIR = os.path.join(os.path.dirname(__file__), '..')
 
@@ -122,6 +123,160 @@ def compute_ceu(preds, instances):
     return correct_usage / relevant if relevant > 0 else 0
 
 
+# --- Fixed (v2) metric definitions --------------------------------------------
+# EAR/PBR are re-defined as *adoption* of the planted wrong claim (from
+# data/wrong_claims.jsonl), scoped to the conflict variants V4/V5, over valid
+# predictions only. CAR/CEU keep their definitions but exclude invalid records
+# (API errors, empty/unparseable outputs), matching mitigation_utility.py.
+
+def load_wrong_claims():
+    path = os.path.join(BASE_DIR, 'data', 'wrong_claims.jsonl')
+    if not os.path.exists(path):
+        raise FileNotFoundError(
+            f"{path} not found. Run src/extract_wrong_claims.py first.")
+    return {c["sample_id"]: c for c in load_jsonl(path)}
+
+
+def adopts_wrong_claim(pred, inst, candidates):
+    """True if the (valid, non-gold) answer matches any wrong-claim candidate
+    via normalized containment in either direction."""
+    if is_correct(pred, inst):
+        return False
+    ans_n = normalize_answer(pred.get("answer"))
+    if not ans_n:
+        return False
+    for cand in candidates:
+        cand_n = normalize_answer(cand)
+        if cand_n and (cand_n in ans_n or ans_n in cand_n):
+            return True
+    return False
+
+
+def compute_ear_new(preds, instances, claims, variants=CONFLICT_VARIANTS):
+    """Evidence Adoption Rate (fixed): fraction of valid predictions on the
+    conflict variants whose answer adopts a planted wrong claim. Samples with
+    undecidable wrong claims are excluded from numerator and denominator.
+    Returns (rate, excluded_n, denom_n)."""
+    denom = num = excluded = 0
+    for p in preds:
+        inst = instances[p["instance_id"]]
+        if inst["variant"] not in variants:
+            continue
+        if not is_valid_prediction(p):
+            continue
+        claim = claims.get(inst["sample_id"])
+        if claim is None or claim["status"] != "decided":
+            excluded += 1
+            continue
+        denom += 1
+        if adopts_wrong_claim(p, inst, claim["candidates"]):
+            num += 1
+    return (num / denom if denom else 0.0), excluded, denom
+
+
+def compute_pbr_paired(preds, instances, claims):
+    """Primacy Bias (fixed, paired): mean over valid pairs of
+    [adoption(V4) - adoption(V5)] per sample. A pair is valid when both the
+    V4 and V5 predictions are valid and the sample's wrong claim is decided.
+    Returns (paired_mean, n_pairs)."""
+    v4_name, v5_name = CONFLICT_VARIANTS  # conflict_before_correct, correct_before_conflict
+    by_sample = {}
+    for p in preds:
+        inst = instances[p["instance_id"]]
+        if inst["variant"] not in CONFLICT_VARIANTS:
+            continue
+        if not is_valid_prediction(p):
+            continue
+        claim = claims.get(inst["sample_id"])
+        if claim is None or claim["status"] != "decided":
+            continue
+        adopt = adopts_wrong_claim(p, inst, claim["candidates"])
+        by_sample.setdefault(inst["sample_id"], {})[inst["variant"]] = int(adopt)
+    diffs = [v[v4_name] - v[v5_name] for v in by_sample.values()
+             if v4_name in v and v5_name in v]
+    return (sum(diffs) / len(diffs) if diffs else 0.0), len(diffs)
+
+
+def compute_car_new(preds, instances, variants=CONFLICT_VARIANTS):
+    """Conflict Arbitration Rate (fixed): among valid predictions on the
+    conflict variants, fraction where the model flags has_conflict=True AND
+    selects the correct evidence position."""
+    denom = num = 0
+    for p in preds:
+        inst = instances[p["instance_id"]]
+        if inst["variant"] not in variants:
+            continue
+        if not is_valid_prediction(p):
+            continue
+        denom += 1
+        if p.get("has_conflict") is True and \
+                inst.get("correct_evidence_position") in (p.get("selected_evidence_ids") or []):
+            num += 1
+    return num / denom if denom else 0.0
+
+
+def compute_ceu_new(preds, instances):
+    """Correct Evidence Usage (fixed): valid predictions only."""
+    denom = num = 0
+    for p in preds:
+        inst = instances[p["instance_id"]]
+        correct_pos = inst.get("correct_evidence_position")
+        if not correct_pos:
+            continue
+        if not is_valid_prediction(p):
+            continue
+        denom += 1
+        if correct_pos in (p.get("selected_evidence_ids") or []):
+            num += 1
+    return num / denom if denom else 0.0
+
+
+def evaluate_model_v2(model_name, preds, instances, claims):
+    acc = sum(1 for p in preds if is_correct(p, instances[p["instance_id"]]))
+    acc = acc / len(preds) if preds else 0.0
+    ear_new, ear_excl, ear_denom = compute_ear_new(preds, instances, claims)
+    pbr_adopt_v4, _, _ = compute_ear_new(
+        preds, instances, claims, variants=(CONFLICT_VARIANTS[0],))
+    pbr_paired, _n_pairs = compute_pbr_paired(preds, instances, claims)
+    return {
+        "model": model_name,
+        "acc": f"{acc:.4f}",
+        "ear_old": f"{compute_ear(preds, instances):.4f}",
+        "ear_new": f"{ear_new:.4f}",
+        "ear_excluded_n": ear_excl,
+        "ear_denom_n": ear_denom,
+        "pbr_old": f"{compute_pbr(preds, instances):.4f}",
+        "pbr_adoption_v4": f"{pbr_adopt_v4:.4f}",
+        "pbr_paired": f"{pbr_paired:.4f}",
+        "car_old": f"{compute_car(preds, instances):.4f}",
+        "car_new": f"{compute_car_new(preds, instances):.4f}",
+        "ceu_old": f"{compute_ceu(preds, instances):.4f}",
+        "ceu_new": f"{compute_ceu_new(preds, instances):.4f}",
+    }
+
+
+def main_v2():
+    instances = load_instances()
+    all_preds = load_all_predictions()
+    claims = load_wrong_claims()
+    metrics_dir = os.path.join(BASE_DIR, 'outputs', 'metrics')
+    os.makedirs(metrics_dir, exist_ok=True)
+
+    rows = [evaluate_model_v2(m, preds, instances, claims)
+            for m, preds in all_preds.items()]
+    out_path = os.path.join(metrics_dir, 'overall_metrics_v2.csv')
+    write_csv(rows, out_path)
+    print(f"V2 metrics saved to {out_path}")
+    for r in rows:
+        print(f"  {r['model']}: acc={r['acc']} "
+              f"EAR old={r['ear_old']} new={r['ear_new']} "
+              f"(denom={r['ear_denom_n']}, excluded={r['ear_excluded_n']}) "
+              f"PBR old={r['pbr_old']} adoptV4={r['pbr_adoption_v4']} paired={r['pbr_paired']} "
+              f"CAR old={r['car_old']} new={r['car_new']} "
+              f"CEU old={r['ceu_old']} new={r['ceu_new']}")
+    return rows
+
+
 def evaluate_model(model_name, preds, instances):
     metrics = {"model": model_name}
     acc = sum(1 for p in preds if is_correct(p, instances[p["instance_id"]]))
@@ -213,4 +368,9 @@ def main():
 
 
 if __name__ == "__main__":
-    main()
+    # Default: v2 metrics only (does NOT touch overall_metrics.csv).
+    # Pass --legacy to regenerate the original metric CSVs.
+    if "--legacy" in sys.argv:
+        main()
+    else:
+        main_v2()

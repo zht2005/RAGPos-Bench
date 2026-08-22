@@ -4,6 +4,25 @@ import os
 import string
 
 
+# --- Variant vocabulary (single source of truth) ------------------------------
+# The paper refers to variants as V1..V6; the data files use descriptive names.
+VARIANT_CODES = {
+    "correct_front": "V1",
+    "correct_middle": "V2",
+    "correct_end": "V3",
+    "conflict_before_correct": "V4",
+    "correct_before_conflict": "V5",
+    "distractor_dominant": "V6",
+}
+VARIANT_ORDER = ("correct_front", "correct_middle", "correct_end",
+                 "conflict_before_correct", "correct_before_conflict",
+                 "distractor_dominant")
+# Variants that contain the planted wrong evidence AND the correct evidence in
+# an explicit conflicting pair (V4, V5). V1-V3 also embed e-dagger, but only V4/V5
+# control its position relative to e-star, so conflict metrics are scoped here.
+CONFLICT_VARIANTS = ("conflict_before_correct", "correct_before_conflict")
+
+
 def load_jsonl(path):
     data = []
     with open(path, 'r', encoding='utf-8') as f:
@@ -110,3 +129,52 @@ def extract_json(text):
     if answer_match:
         return {"answer": answer_match.group(1)}
     return None
+
+
+# --- Record-level failure classification --------------------------------------
+# API failures were serialised into the raw prediction files as JSON objects with
+# an "error" key, which json.loads() happily accepts. Consequently the
+# `parse_error` flag in outputs/parsed_predictions/ is False for these records
+# even though no model answer exists. Any denominator over model behaviour must
+# therefore be built from these classes, not from `parse_error` alone.
+RECORD_OK = "ok"
+RECORD_API_ERROR = "api_error"
+RECORD_MODEL_EMPTY = "model_empty"
+RECORD_UNPARSEABLE = "unparseable"
+RECORD_CLASSES = (RECORD_OK, RECORD_API_ERROR, RECORD_MODEL_EMPTY, RECORD_UNPARSEABLE)
+
+
+def classify_raw_output(raw):
+    """Classify a raw model output into exactly one RECORD_* class."""
+    if raw is None:
+        return RECORD_MODEL_EMPTY
+    text = raw.strip()
+    if not text:
+        return RECORD_MODEL_EMPTY
+    try:
+        direct = json.loads(text)
+    except (json.JSONDecodeError, ValueError):
+        direct = None
+    if isinstance(direct, dict) and "error" in direct:
+        return RECORD_API_ERROR
+    parsed = extract_json(text)
+    if parsed is None:
+        return RECORD_UNPARSEABLE
+    # Parseable JSON whose answer field is empty carries no model answer
+    # (observed for DeepSeek-Reasoner when CoT exhausts the output budget);
+    # classify as model_empty so the taxonomy matches is_valid_prediction.
+    if isinstance(parsed, dict) and not str(parsed.get("answer") or "").strip():
+        return RECORD_MODEL_EMPTY
+    return RECORD_OK
+
+
+def is_valid_prediction(pred):
+    """True when a parsed prediction carries an actual model answer.
+
+    Excludes (a) parse failures -- model_empty and unparseable records, which
+    parse_outputs.py flags with parse_error=True, and (b) API-error records,
+    whose `answer` field ends up as the empty string.
+    """
+    if pred.get("parse_error"):
+        return False
+    return bool((pred.get("answer") or "").strip())

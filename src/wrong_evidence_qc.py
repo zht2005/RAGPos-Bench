@@ -24,7 +24,7 @@ from collections import defaultdict
 
 import numpy as np
 
-BASE = ".."
+BASE = os.environ.get("RAGPOS_BASE", os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 sys.path.insert(0, os.path.join(BASE, "src"))
 from utils import load_jsonl, normalize_answer  # noqa
 

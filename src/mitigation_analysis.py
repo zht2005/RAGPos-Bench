@@ -27,7 +27,7 @@ import matplotlib.font_manager as fm
 from matplotlib import rcParams
 import numpy as np
 
-BASE = ".."
+BASE = os.environ.get("RAGPOS_BASE", os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 sys.path.insert(0, os.path.join(BASE, "src"))
 from utils import load_jsonl, match_answer  # noqa
 
@@ -115,8 +115,9 @@ def collapse(per_sid_indicators, key):
 
 
 def paired_bootstrap(values_a, values_b, n_boot=B_BOOT):
-    """One-sided paired bootstrap p-value: prob(diff <= 0) under resample.
+    """Two-sided paired bootstrap: p-value and percentile CI of (a-b) mean.
     Inputs are aligned arrays (per-sample paired observations).
+    Returns (obs, p, ci_lo, ci_hi).
     """
     diffs = values_a - values_b
     obs = diffs.mean()
@@ -130,7 +131,9 @@ def paired_bootstrap(values_a, values_b, n_boot=B_BOOT):
         p = float((boot_means <= 0).mean())
     else:
         p = float((boot_means >= 0).mean())
-    return obs, p
+    ci_lo = float(np.percentile(boot_means, 2.5))
+    ci_hi = float(np.percentile(boot_means, 97.5))
+    return obs, p, ci_lo, ci_hi
 
 
 def main():
@@ -167,7 +170,7 @@ def main():
             arr_c = np.array([c_map[s] for s in common])
             mean_b = arr_b.mean(); mean_c = arr_c.mean()
             delta = mean_c - mean_b
-            obs, p = paired_bootstrap(arr_c, arr_b)
+            obs, p, _ci_lo, _ci_hi = paired_bootstrap(arr_c, arr_b)
             sig = "*" if p < 0.05 else ""
             print(f"  {mid:<30s} {metric.upper():<7s} {mean_b:>7.4f} {mean_c:>7.4f} {delta:>+7.4f} {p:>8.4f} {sig:>4s}")
             delta_rows.append({"model": mid, "metric": metric.upper(),

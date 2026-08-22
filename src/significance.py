@@ -1,15 +1,31 @@
-"""Statistical significance tests: bootstrap CI and paired comparisons."""
+"""Statistical significance tests: two-sided paired bootstrap over sample_ids.
+
+For each model and each contrast (V1_vs_V3, V1_vs_V4, V4_vs_V5) we pair the
+per-sample correctness indicators by sample_id, compute the observed mean paired
+difference D, and bootstrap-resample sample_ids (B=10,000, seed 42) to obtain
+(a) a two-sided p-value with the bootstrap distribution centred at zero, and
+(b) a 95% percentile CI of D. Paired resampling also yields CIs for each arm.
+"""
 import csv
 import os
+import shutil
 import sys
 import numpy as np
 from collections import defaultdict
 
 sys.path.insert(0, os.path.dirname(__file__))
-from utils import load_jsonl, match_answer, is_abstention, normalize_answer
+from utils import load_jsonl, match_answer, VARIANT_CODES
 
 BASE_DIR = os.path.join(os.path.dirname(__file__), '..')
-np.random.seed(42)
+
+SEED = 42
+N_BOOT = 10_000
+EXPECTED_PAIRS = 2500
+ALPHA = 0.01
+
+# Contrasts expressed in paper codes; resolved to descriptive names via VARIANT_CODES.
+CONTRASTS = (("V1", "V3"), ("V1", "V4"), ("V4", "V5"))
+CODE_TO_NAME = {code: name for name, code in VARIANT_CODES.items()}
 
 
 def load_data():
@@ -27,88 +43,96 @@ def is_pred_correct(pred, inst):
     return match_answer(pred["answer"], inst["gold_answer"], "general")
 
 
-def bootstrap_ci(scores, n_boot=1000, ci=0.95):
-    scores = np.array(scores, dtype=float)
-    means = []
-    for _ in range(n_boot):
-        sample = np.random.choice(scores, size=len(scores), replace=True)
-        means.append(np.mean(sample))
-    means = sorted(means)
-    lo = means[int((1 - ci) / 2 * n_boot)]
-    hi = means[int((1 + ci) / 2 * n_boot)]
-    return np.mean(scores), lo, hi
+def per_sample_scores(instances, preds, variant_name):
+    """Mean correctness per sample_id for one variant (one instance per sample
+    in this benchmark, so the mean is the 0/1 indicator itself)."""
+    acc = defaultdict(list)
+    for inst_id, inst in instances.items():
+        if inst["variant"] != variant_name:
+            continue
+        pred = preds.get(inst_id)
+        if pred is None:
+            continue
+        acc[inst["sample_id"]].append(1.0 if is_pred_correct(pred, inst) else 0.0)
+    return {sid: float(np.mean(v)) for sid, v in acc.items()}
 
 
-def paired_bootstrap_test(scores_a, scores_b, n_boot=1000):
-    scores_a = np.array(scores_a, dtype=float)
-    scores_b = np.array(scores_b, dtype=float)
-    obs_diff = np.mean(scores_a) - np.mean(scores_b)
-    count = 0
-    n = len(scores_a)
-    for _ in range(n_boot):
-        idx = np.random.randint(0, n, size=n)
-        diff = np.mean(scores_a[idx]) - np.mean(scores_b[idx])
-        if diff <= 0:
-            count += 1
-    p_value = count / n_boot
-    return obs_diff, p_value
+def paired_bootstrap_test(scores_a, scores_b, n_boot=N_BOOT, seed=SEED):
+    """Two-sided paired bootstrap test on aligned per-sample scores.
+
+    Returns (mean_a, ci_a, mean_b, ci_b, D, ci_d, p_two_sided) where D is the
+    observed mean paired difference and the p-value centres the bootstrap
+    distribution at zero (shift by -D) before counting |.| >= |D|.
+    """
+    a = np.asarray(scores_a, dtype=float)
+    b = np.asarray(scores_b, dtype=float)
+    assert a.shape == b.shape and a.ndim == 1 and len(a) > 0
+    n = len(a)
+    d = a - b
+    D = float(d.mean())
+
+    rng = np.random.default_rng(seed)
+    idx = rng.integers(0, n, size=(n_boot, n))
+    boot_a = a[idx].mean(axis=1)
+    boot_b = b[idx].mean(axis=1)
+    boot_d = boot_a - boot_b
+
+    # Centre bootstrap distribution at zero to emulate H0: E[D]=0.
+    centered = boot_d - D
+    p = float(np.mean(np.abs(centered) >= abs(D)))
+
+    ci = lambda x: (float(np.percentile(x, 2.5)), float(np.percentile(x, 97.5)))
+    return (float(a.mean()), ci(boot_a), float(b.mean()), ci(boot_b), D, ci(boot_d), p)
 
 
 def main():
     instances, all_preds = load_data()
     results = []
 
-    by_sample_variant = defaultdict(lambda: defaultdict(dict))
-    for inst_id, inst in instances.items():
-        by_sample_variant[inst["sample_id"]][inst["variant"]] = inst_id
-
     for model_name, preds in all_preds.items():
-        v1_scores = []
-        v3_scores = []
-        v4_scores = []
-        for sample_id, variants in by_sample_variant.items():
-            for vname, inst_id in variants.items():
-                if inst_id not in preds:
-                    continue
-                inst = instances[inst_id]
-                pred = preds[inst_id]
-                correct = 1 if is_pred_correct(pred, inst) else 0
-                if vname == "correct_front":
-                    v1_scores.append(correct)
-                elif vname == "correct_end":
-                    v3_scores.append(correct)
-                elif vname == "conflict_before_correct":
-                    v4_scores.append(correct)
+        # Per-sample score maps for every variant used in any contrast.
+        needed_codes = sorted({c for pair in CONTRASTS for c in pair})
+        scores = {code: per_sample_scores(instances, preds, CODE_TO_NAME[code])
+                  for code in needed_codes}
 
-        if v1_scores and v3_scores:
-            n = min(len(v1_scores), len(v3_scores))
-            diff, p = paired_bootstrap_test(v1_scores[:n], v3_scores[:n])
-            mean_v1, lo1, hi1 = bootstrap_ci(v1_scores)
-            mean_v3, lo3, hi3 = bootstrap_ci(v3_scores)
+        for code_a, code_b in CONTRASTS:
+            sa, sb = scores[code_a], scores[code_b]
+            common = sorted(set(sa) & set(sb))
+            if len(common) != EXPECTED_PAIRS:
+                print(f"WARNING: {model_name} {code_a}_vs_{code_b}: "
+                      f"{len(common)} pairs (expected {EXPECTED_PAIRS})")
+            if not common:
+                continue
+            a = [sa[sid] for sid in common]
+            b = [sb[sid] for sid in common]
+            mean_a, ci_a, mean_b, ci_b, D, ci_d, p = paired_bootstrap_test(a, b)
             results.append({
-                "model": model_name, "comparison": "V1_vs_V3",
-                "mean_A": f"{mean_v1:.4f}", "CI_A": f"[{lo1:.4f},{hi1:.4f}]",
-                "mean_B": f"{mean_v3:.4f}", "CI_B": f"[{lo3:.4f},{hi3:.4f}]",
-                "diff": f"{diff:.4f}", "p_value": f"{p:.4f}",
-                "significant": "yes" if p < 0.05 else "no"
+                "model": model_name,
+                "contrast": f"{code_a}_vs_{code_b}",
+                "n_pairs": len(common),
+                "mean_a": f"{mean_a:.4f}",
+                "ci_a_lo": f"{ci_a[0]:.4f}", "ci_a_hi": f"{ci_a[1]:.4f}",
+                "mean_b": f"{mean_b:.4f}",
+                "ci_b_lo": f"{ci_b[0]:.4f}", "ci_b_hi": f"{ci_b[1]:.4f}",
+                "diff": f"{D:.4f}",
+                "ci_diff_lo": f"{ci_d[0]:.4f}", "ci_diff_hi": f"{ci_d[1]:.4f}",
+                "p_value": f"{p:.4f}",
+                "significant": "yes" if p < ALPHA else "no",
             })
-        if v1_scores and v4_scores:
-            n = min(len(v1_scores), len(v4_scores))
-            diff, p = paired_bootstrap_test(v1_scores[:n], v4_scores[:n])
-            mean_v4, lo4, hi4 = bootstrap_ci(v4_scores)
-            results.append({
-                "model": model_name, "comparison": "V1_vs_V4",
-                "mean_A": f"{mean_v1:.4f}", "CI_A": f"[{lo1:.4f},{hi1:.4f}]",
-                "mean_B": f"{mean_v4:.4f}", "CI_B": f"[{lo4:.4f},{hi4:.4f}]",
-                "diff": f"{diff:.4f}", "p_value": f"{p:.4f}",
-                "significant": "yes" if p < 0.05 else "no"
-            })
+            print(f"{model_name:<32s} {code_a}_vs_{code_b}  n={len(common)}  "
+                  f"A={mean_a:.4f}  B={mean_b:.4f}  D={D:+.4f} "
+                  f"[{ci_d[0]:+.4f},{ci_d[1]:+.4f}]  p={p:.4f}")
 
     out_path = os.path.join(BASE_DIR, 'outputs', 'metrics', 'significance_tests.csv')
     os.makedirs(os.path.dirname(out_path), exist_ok=True)
+    if os.path.exists(out_path):
+        backup = os.path.join(os.path.dirname(out_path), 'significance_tests_OLD_BACKUP.csv')
+        if not os.path.exists(backup):
+            shutil.copy2(out_path, backup)
+            print(f"Backed up previous results to {backup}")
     if results:
         with open(out_path, 'w', newline='') as f:
-            writer = csv.DictWriter(f, fieldnames=results[0].keys())
+            writer = csv.DictWriter(f, fieldnames=list(results[0].keys()))
             writer.writeheader()
             writer.writerows(results)
     print(f"Significance tests saved to {out_path}")

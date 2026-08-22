@@ -15,7 +15,7 @@ from collections import defaultdict
 
 import google.generativeai as genai
 
-BASE = ".."
+BASE = os.environ.get("RAGPOS_BASE", os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 sys.path.insert(0, os.path.join(BASE, "src"))
 from utils import load_jsonl, save_jsonl  # noqa
 from mitigation_utility import build_prompt, select_subset, CONFLICT_AWARE_PRELUDE  # noqa

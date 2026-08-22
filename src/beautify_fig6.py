@@ -14,7 +14,7 @@ import matplotlib.font_manager as fm
 from matplotlib import rcParams
 import numpy as np
 
-BASE = ".."
+BASE = os.environ.get("RAGPOS_BASE", os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 CSV = os.path.join(BASE, "outputs/metrics/task_type_breakdown.csv")
 FIG = os.path.join(BASE, "figures")
 
