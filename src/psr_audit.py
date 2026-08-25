@@ -1,14 +1,9 @@
-"""Audit PSR direction and definition.
+"""Audit the final PSR definition against the historical pre-review version.
 
-Paper §3.3 defines PSR as the fraction of base samples whose answer-correctness
-indicator differs across {V1, V2, V3}, lower is better.
-The current src/evaluate.py:compute_psr instead checks whether the *answer
-strings* (after normalize_answer) differ across ALL six variants. This is a
-broader notion that mixes position effects with conflict and distractor effects,
-and it explains why GPT-5.4-medium has PSR=0.894 despite being position-stable.
-
-This script recomputes PSR three ways for every model and writes a comparison
-report so we can decide which to publish.
+The paper defines PSR as the fraction of base samples whose answer-correctness
+indicator differs across {V1, V2, V3}, lower is better. The pre-review pipeline
+instead compared normalized answer strings across all six variants. This script
+keeps that historical calculation only as an audit and recomputes the paper PSR.
 
 Outputs:
   outputs/metrics/psr_audit.csv
@@ -49,7 +44,7 @@ def main():
             inst = insts[iid]
             by_sample[inst["sample_id"]][inst["variant"]] = p
 
-        # --- (a) current implementation: answer strings differ across all 6 variants
+        # --- (a) pre-review implementation: answer strings differ across all 6 variants
         cur_n = 0
         cur_sens = 0
         for sid, m in by_sample.items():
@@ -83,21 +78,23 @@ def main():
 
         rows.append({
             "model": model,
-            "PSR_current_impl": round(psr_current, 4),
+            "PSR_pre_review_impl": round(psr_current, 4),
             "PSR_paper_def": round(psr_paper, 4),
             "abs_V1_minus_V3": round(spread, 4),
         })
 
     # Print + save
-    print(f"{'model':<32s} {'PSR_current':>12s} {'PSR_paper':>10s} {'|V1-V3|':>10s}")
+    print(f"{'model':<32s} {'PSR_pre_review':>14s} {'PSR_paper':>10s} {'|V1-V3|':>10s}")
     print("-" * 70)
     for r in rows:
-        print(f"{r['model']:<32s} {r['PSR_current_impl']:>12.4f} "
+        print(f"{r['model']:<32s} {r['PSR_pre_review_impl']:>14.4f} "
               f"{r['PSR_paper_def']:>10.4f} {r['abs_V1_minus_V3']:>10.4f}")
 
     out_csv = os.path.join(BASE, "outputs/metrics/psr_audit.csv")
     with open(out_csv, "w", newline="") as f:
-        w = csv.DictWriter(f, fieldnames=list(rows[0].keys()))
+        w = csv.DictWriter(
+            f, fieldnames=list(rows[0].keys()), lineterminator="\n"
+        )
         w.writeheader()
         w.writerows(rows)
     print("\n[ok] wrote", out_csv)

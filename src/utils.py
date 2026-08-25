@@ -17,9 +17,9 @@ VARIANT_CODES = {
 VARIANT_ORDER = ("correct_front", "correct_middle", "correct_end",
                  "conflict_before_correct", "correct_before_conflict",
                  "distractor_dominant")
-# Variants that contain the planted wrong evidence AND the correct evidence in
-# an explicit conflicting pair (V4, V5). V1-V3 also embed e-dagger, but only V4/V5
-# control its position relative to e-star, so conflict metrics are scoped here.
+# Variants intended to contain the planted wrong evidence and the correct
+# evidence. In released v1, 61 generation failures have no planted wrong text;
+# metric code excludes those sample ids from conflict-specific denominators.
 CONFLICT_VARIANTS = ("conflict_before_correct", "correct_before_conflict")
 
 

@@ -34,11 +34,11 @@ def is_correct(pred, instance):
 
 
 def compute_psr(preds_by_sample, instances):
-    """Position Sensitivity Rate (paper definition, Section 3.3):
+    """Released-layout sensitivity rate (reported as PSR for compatibility):
     fraction of base samples whose answer-correctness indicator differs
-    across the position-only variants {V1=correct_front, V2=correct_middle,
-    V3=correct_end}. Lower is better; a perfectly position-invariant model
-    has PSR=0.
+    across {V1=correct_front, V2=correct_middle, V3=correct_end}. The released
+    v1 layouts also resample/reorder distractors, so PSR is not a pure position
+    measure. Lower is better; an invariant model has PSR=0.
     """
     POS_VARIANTS = ("correct_front", "correct_middle", "correct_end")
     sensitive = 0
@@ -197,7 +197,8 @@ def compute_pbr_paired(preds, instances, claims):
     return (sum(diffs) / len(diffs) if diffs else 0.0), len(diffs)
 
 
-def compute_car_new(preds, instances, variants=CONFLICT_VARIANTS):
+def compute_car_new(preds, instances, eligible_sample_ids,
+                    variants=CONFLICT_VARIANTS):
     """Conflict Arbitration Rate (fixed): among valid predictions on the
     conflict variants, fraction where the model flags has_conflict=True AND
     selects the correct evidence position."""
@@ -205,6 +206,8 @@ def compute_car_new(preds, instances, variants=CONFLICT_VARIANTS):
     for p in preds:
         inst = instances[p["instance_id"]]
         if inst["variant"] not in variants:
+            continue
+        if inst["sample_id"] not in eligible_sample_ids:
             continue
         if not is_valid_prediction(p):
             continue
@@ -238,6 +241,10 @@ def evaluate_model_v2(model_name, preds, instances, claims):
     pbr_adopt_v4, _, _ = compute_ear_new(
         preds, instances, claims, variants=(CONFLICT_VARIANTS[0],))
     pbr_paired, _n_pairs = compute_pbr_paired(preds, instances, claims)
+    eligible_conflicts = {
+        sample_id for sample_id, claim in claims.items()
+        if claim.get("has_nonempty_wrong_evidence") is True
+    }
     return {
         "model": model_name,
         "acc": f"{acc:.4f}",
@@ -249,7 +256,7 @@ def evaluate_model_v2(model_name, preds, instances, claims):
         "pbr_adoption_v4": f"{pbr_adopt_v4:.4f}",
         "pbr_paired": f"{pbr_paired:.4f}",
         "car_old": f"{compute_car(preds, instances):.4f}",
-        "car_new": f"{compute_car_new(preds, instances):.4f}",
+        "car_new": f"{compute_car_new(preds, instances, eligible_conflicts):.4f}",
         "ceu_old": f"{compute_ceu(preds, instances):.4f}",
         "ceu_new": f"{compute_ceu_new(preds, instances):.4f}",
     }
@@ -264,9 +271,34 @@ def main_v2():
 
     rows = [evaluate_model_v2(m, preds, instances, claims)
             for m, preds in all_preds.items()]
-    out_path = os.path.join(metrics_dir, 'overall_metrics_v2.csv')
-    write_csv(rows, out_path)
-    print(f"V2 metrics saved to {out_path}")
+    audit_path = os.path.join(metrics_dir, 'overall_metrics_v2.csv')
+    write_csv(rows, audit_path)
+
+    canonical_rows = []
+    for row in rows:
+        model = row['model']
+        preds = all_preds[model]
+        by_sample = defaultdict(list)
+        for pred in preds:
+            inst = instances[pred['instance_id']]
+            by_sample[inst['sample_id']].append(pred)
+        canonical_rows.append({
+            'model': model,
+            'accuracy': row['acc'],
+            'valid_response_rate': f"{sum(is_valid_prediction(p) for p in preds) / len(preds):.4f}",
+            'PSR': f"{compute_psr(by_sample, instances):.4f}",
+            'PBR': row['pbr_adoption_v4'],
+            'CAR': row['car_new'],
+            'EAR': row['ear_new'],
+            'CEU': row['ceu_new'],
+            'paired_adoption_effect': row['pbr_paired'],
+            'ear_excluded_n': row['ear_excluded_n'],
+            'ear_denom_n': row['ear_denom_n'],
+        })
+    canonical_path = os.path.join(metrics_dir, 'overall_metrics.csv')
+    write_csv(canonical_rows, canonical_path)
+    print(f"Canonical metrics saved to {canonical_path}")
+    print(f"Definition-audit metrics saved to {audit_path}")
     for r in rows:
         print(f"  {r['model']}: acc={r['acc']} "
               f"EAR old={r['ear_old']} new={r['ear_new']} "
@@ -335,12 +367,14 @@ def write_csv(rows, path):
         return
     os.makedirs(os.path.dirname(path), exist_ok=True)
     with open(path, 'w', newline='') as f:
-        writer = csv.DictWriter(f, fieldnames=rows[0].keys())
+        writer = csv.DictWriter(
+            f, fieldnames=rows[0].keys(), lineterminator="\n"
+        )
         writer.writeheader()
         writer.writerows(rows)
 
 
-def main():
+def main_legacy():
     instances = load_instances()
     all_preds = load_all_predictions()
     metrics_dir = os.path.join(BASE_DIR, 'outputs', 'metrics')
@@ -357,7 +391,7 @@ def main():
         variant_rows.extend(evaluate_by_variant(model_name, preds, instances))
         position_rows.extend(evaluate_by_position(model_name, preds, instances))
 
-    write_csv(overall_rows, os.path.join(metrics_dir, 'overall_metrics.csv'))
+    write_csv(overall_rows, os.path.join(metrics_dir, 'legacy_overall_metrics.csv'))
     write_csv(source_rows, os.path.join(metrics_dir, 'by_source_metrics.csv'))
     write_csv(variant_rows, os.path.join(metrics_dir, 'by_variant_metrics.csv'))
     write_csv(position_rows, os.path.join(metrics_dir, 'position_metrics.csv'))
@@ -368,9 +402,9 @@ def main():
 
 
 if __name__ == "__main__":
-    # Default: v2 metrics only (does NOT touch overall_metrics.csv).
-    # Pass --legacy to regenerate the original metric CSVs.
+    # Default: final paper metrics. The legacy option is retained only to audit
+    # the pre-review metric definitions and never overwrites canonical results.
     if "--legacy" in sys.argv:
-        main()
+        main_legacy()
     else:
         main_v2()

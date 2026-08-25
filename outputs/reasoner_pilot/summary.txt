@@ -1,0 +1,18 @@
+=== DeepSeek-Reasoner Pilot Comparison ===
+Pilot size: 498 instances (max_tokens=2048)
+Baseline matches: 498 (max_tokens=512)
+
+Empty raw_output (API returned ""):
+  baseline (512):  179/498 (35.9%)
+  pilot   (2048):  6/498 (1.2%)
+  delta:           -34.7pp
+
+Parsed answer empty (couldn't extract any answer):
+  baseline (512):  299/498 (60.0%)
+  pilot   (2048):  17/498 (3.4%)
+  delta:           -56.6pp
+
+Accuracy (gold-answer match, only on matched-instance subset):
+  baseline (512):  100/498 (20.08%)
+  pilot   (2048):  267/498 (53.61%)
+  delta:           +33.53pp

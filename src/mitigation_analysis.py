@@ -1,16 +1,15 @@
-"""Aggregate mitigation results into a paper-ready Δ table and a Figure 7
-delta-metric bar chart. Also runs paired bootstrap on Acc / PBR / CAR / EAR / CEU
-between baseline and conflict_aware per model.
+"""Aggregate mitigation results into the paper-ready delta table.
+
+Runs paired bootstrap on Acc / PBR / CAR / EAR / CEU between baseline and
+conflict_aware per model.
 
 Inputs:
-  outputs/mitigation/mitigation_summary.csv       (already aggregated)
   outputs/parsed_predictions/<model>.jsonl        (baseline per-instance)
   outputs/mitigation/phase_a__<model>.jsonl       (conflict-aware per-instance)
+  data/wrong_claims.jsonl                         (planted claim candidates)
 
 Outputs:
   outputs/mitigation/mitigation_delta.csv         (Δ table)
-  outputs/mitigation/mitigation_significance.csv  (paired bootstrap p-values)
-  figures/fig7_mitigation_delta.{pdf,png}
 """
 import csv
 import json
@@ -20,19 +19,14 @@ import re
 import sys
 from collections import defaultdict
 
-import matplotlib
-matplotlib.use("Agg")
-import matplotlib.pyplot as plt
-import matplotlib.font_manager as fm
-from matplotlib import rcParams
 import numpy as np
 
 BASE = os.environ.get("RAGPOS_BASE", os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 sys.path.insert(0, os.path.join(BASE, "src"))
-from utils import load_jsonl, match_answer  # noqa
+from utils import is_valid_prediction, load_jsonl, match_answer  # noqa
+from evaluate import adopts_wrong_claim, load_wrong_claims  # noqa
 
 OUT = os.path.join(BASE, "outputs/mitigation")
-FIG = os.path.join(BASE, "figures")
 SEED = 42
 SAMPLE_N = 300
 B_BOOT = 1000
@@ -75,12 +69,12 @@ def select_subset(insts):
     return eligible[:SAMPLE_N]
 
 
-def per_sample_indicators(records, insts):
-    """Return per-sample dict: sid -> {acc_v4, acc_v5, pbr_v4, ear, car, ceu}.
-    Aggregates across V4 and V5 within one base sample.
-    """
+def per_sample_indicators(records, insts, claims):
+    """Return per-sample, per-variant indicators under the final metric definitions."""
     by_iid = {r["instance_id"]: r for r in records}
-    out = defaultdict(lambda: {"acc": [], "pbr": None, "ear": [], "car": [], "ceu": []})
+    out = defaultdict(lambda: {
+        "acc": {}, "pbr": {}, "ear": {}, "car": {}, "ceu": {}
+    })
     for iid, r in by_iid.items():
         inst = insts.get(iid)
         if not inst: continue
@@ -91,27 +85,38 @@ def per_sample_indicators(records, insts):
         correct = match_answer(ans, inst["gold_answer"], "general")
         cor_pos = inst.get("correct_evidence_position")
         sid = inst["sample_id"]
-        out[sid]["acc"].append(int(correct))
-        if inst["variant"] == "conflict_before_correct":
-            out[sid]["pbr"] = int((not correct) and ans.strip() != "")
-        if inst["variant"] in ("conflict_before_correct", "correct_before_conflict"):
-            out[sid]["ear"].append(int((not correct) and ans.strip() != ""))
-            out[sid]["car"].append(int(hc is True and cor_pos in sel))
+        variant = inst["variant"]
+        out[sid]["acc"][variant] = int(correct)
+
+        if not is_valid_prediction(d):
+            continue
+
+        if variant in ("conflict_before_correct", "correct_before_conflict"):
+            claim = claims.get(sid)
+            if claim is not None and claim["status"] == "decided":
+                adoption = int(adopts_wrong_claim(d, inst, claim["candidates"]))
+                out[sid]["ear"][variant] = adoption
+                if variant == "conflict_before_correct":
+                    out[sid]["pbr"][variant] = adoption
+            if claim is not None and claim.get("has_nonempty_wrong_evidence") is True:
+                out[sid]["car"][variant] = int(hc is True and cor_pos in sel)
         if cor_pos:
-            out[sid]["ceu"].append(int(cor_pos in sel))
+            out[sid]["ceu"][variant] = int(cor_pos in sel)
     return out
 
 
-def collapse(per_sid_indicators, key):
-    """Collapse list-valued indicator into one float per sid (mean)."""
-    res = {}
-    for sid, d in per_sid_indicators.items():
-        v = d[key]
-        if isinstance(v, list):
-            if v: res[sid] = float(np.mean(v))
-        else:
-            if v is not None: res[sid] = float(v)
-    return res
+def paired_values(baseline, treatment, key):
+    """Average only variants observed under both conditions, then pair by sample."""
+    values_b, values_t = [], []
+    for sid in sorted(set(baseline) & set(treatment)):
+        b = baseline[sid][key]
+        t = treatment[sid][key]
+        common_variants = sorted(set(b) & set(t))
+        if not common_variants:
+            continue
+        values_b.append(float(np.mean([b[v] for v in common_variants])))
+        values_t.append(float(np.mean([t[v] for v in common_variants])))
+    return np.asarray(values_b), np.asarray(values_t)
 
 
 def paired_bootstrap(values_a, values_b, n_boot=B_BOOT):
@@ -127,10 +132,8 @@ def paired_bootstrap(values_a, values_b, n_boot=B_BOOT):
     for k in range(n_boot):
         idx = rng.integers(0, n, size=n)
         boot_means[k] = diffs[idx].mean()
-    if obs >= 0:
-        p = float((boot_means <= 0).mean())
-    else:
-        p = float((boot_means >= 0).mean())
+    centered = boot_means - obs
+    p = float((np.abs(centered) >= abs(obs)).mean())
     ci_lo = float(np.percentile(boot_means, 2.5))
     ci_hi = float(np.percentile(boot_means, 97.5))
     return obs, p, ci_lo, ci_hi
@@ -138,12 +141,11 @@ def paired_bootstrap(values_a, values_b, n_boot=B_BOOT):
 
 def main():
     insts = {i["instance_id"]: i for i in load_jsonl(os.path.join(BASE, "data/eval_instances.jsonl"))}
+    claims = load_wrong_claims()
     subset = select_subset(insts.values())
     subset_iids = {iv4 for _, iv4, _ in subset} | {iv5 for _, _, iv5 in subset}
-    sids_in_subset = [sid for sid, _, _ in subset]
 
     delta_rows = []
-    sig_rows = []
 
     print(f"{'model':<32s} {'metric':<7s} {'base':>7s} {'CA':>7s} {'Δ':>7s} {'p':>8s} {'sig':>4s}")
     print("-" * 80)
@@ -159,94 +161,32 @@ def main():
                      for p in load_jsonl(base_path) if p["instance_id"] in subset_iids]
         ca_recs = list(load_jsonl(ca_path))
 
-        b = per_sample_indicators(base_recs, insts)
-        c = per_sample_indicators(ca_recs, insts)
+        b = per_sample_indicators(base_recs, insts, claims)
+        c = per_sample_indicators(ca_recs, insts, claims)
 
         for metric in ("acc", "pbr", "car", "ear", "ceu"):
-            b_map = collapse(b, metric); c_map = collapse(c, metric)
-            common = sorted(set(b_map) & set(c_map))
-            if not common: continue
-            arr_b = np.array([b_map[s] for s in common])
-            arr_c = np.array([c_map[s] for s in common])
+            arr_b, arr_c = paired_values(b, c, metric)
+            if not len(arr_b): continue
             mean_b = arr_b.mean(); mean_c = arr_c.mean()
             delta = mean_c - mean_b
-            obs, p, _ci_lo, _ci_hi = paired_bootstrap(arr_c, arr_b)
+            obs, p, ci_lo, ci_hi = paired_bootstrap(arr_c, arr_b)
             sig = "*" if p < 0.05 else ""
             print(f"  {mid:<30s} {metric.upper():<7s} {mean_b:>7.4f} {mean_c:>7.4f} {delta:>+7.4f} {p:>8.4f} {sig:>4s}")
             delta_rows.append({"model": mid, "metric": metric.upper(),
+                               "n_pairs": len(arr_b),
                                "baseline": f"{mean_b:.4f}", "conflict_aware": f"{mean_c:.4f}",
                                "delta": f"{delta:+.4f}", "p_value": f"{p:.4f}",
+                               "ci_lo": f"{ci_lo:+.4f}", "ci_hi": f"{ci_hi:+.4f}",
                                "significant": "yes" if p < 0.05 else "no"})
 
     # Save delta CSV
     out_delta = os.path.join(OUT, "mitigation_delta.csv")
     with open(out_delta, "w", newline="") as f:
-        w = csv.DictWriter(f, fieldnames=list(delta_rows[0].keys()))
+        w = csv.DictWriter(
+            f, fieldnames=list(delta_rows[0].keys()), lineterminator="\n"
+        )
         w.writeheader(); w.writerows(delta_rows)
     print(f"\n[ok] {out_delta}")
-
-    # ----- Figure 7: Δ-metric bar chart (rows = models, columns = 4 metrics) -----
-    serif_pick = next((n for n in ("Times New Roman","Liberation Serif","DejaVu Serif")
-                       if fm.findfont(fm.FontProperties(family=n), fallback_to_default=False)),
-                      "DejaVu Serif")
-    rcParams.update({
-        "font.family":"serif", "font.serif":[serif_pick],
-        "axes.titlesize":12, "axes.labelsize":10.5,
-        "xtick.labelsize":9.5, "ytick.labelsize":9.5,
-        "legend.fontsize":9, "axes.linewidth":0.6, "axes.edgecolor":"#444",
-    })
-
-    metrics_to_plot = ["ACC", "CAR", "PBR", "EAR"]
-    invert = {"ACC": False, "CAR": False, "PBR": True, "EAR": True}
-    deltas = defaultdict(dict)
-    sigs = defaultdict(dict)
-    for r in delta_rows:
-        deltas[r["model"]][r["metric"]] = float(r["delta"])
-        sigs[r["model"]][r["metric"]] = (r["significant"] == "yes")
-
-    fig, ax = plt.subplots(figsize=(7.6, 4.4))
-    n_models = len(DISPLAY)
-    n_metrics = len(metrics_to_plot)
-    w = 0.18
-    x = np.arange(n_metrics)
-    colors = ["#4C78A8", "#72B7B2", "#54A24B", "#B279A2", "#9D755D", "#F2A65A", "#E45756"]
-
-    for i, (mid, label, _) in enumerate(DISPLAY):
-        # apply directional sign so "good" delta is positive on the chart
-        bars = []
-        for met in metrics_to_plot:
-            d = deltas.get(mid, {}).get(met, 0.0)
-            if invert[met]:
-                d = -d  # flip so improvement is positive
-            bars.append(d)
-        offsets = x + (i - n_models/2 + 0.5) * w
-        b = ax.bar(offsets, bars, w, color=colors[i % len(colors)], label=label,
-                   edgecolor="white", linewidth=0.4)
-        for bi, met in enumerate(metrics_to_plot):
-            if sigs.get(mid, {}).get(met, False):
-                ax.text(offsets[bi], bars[bi] + (0.01 if bars[bi] >= 0 else -0.025),
-                        "*", ha="center", va="bottom" if bars[bi] >= 0 else "top",
-                        color="black", fontsize=10)
-    ax.axhline(0, color="#666666", linewidth=0.6)
-    ax.set_xticks(x)
-    ax.set_xticklabels(["ΔAcc ↑", "ΔCAR ↑", "ΔPBR ↓ (sign-flipped)", "ΔEAR ↓ (sign-flipped)"])
-    ax.set_ylabel("Δ (conflict-aware $-$ baseline) — higher is better")
-    ax.set_title("Conflict-aware prompting: per-model improvement over baseline\n"
-                 "($\\star$ = paired-bootstrap significant at $p<0.05$, 300 base samples)",
-                 pad=10, color="#222")
-    ax.spines["top"].set_visible(False); ax.spines["right"].set_visible(False)
-    ax.yaxis.grid(True, color="#B0B0B0", linewidth=0.5, alpha=0.25)
-    ax.set_axisbelow(True)
-    ax.legend(loc="lower center", bbox_to_anchor=(0.5, 1.18), ncol=4,
-              frameon=False, handlelength=1.4, columnspacing=1.2)
-    plt.tight_layout()
-    pdfp = os.path.join(FIG, "fig7_mitigation_delta.pdf")
-    pngp = os.path.join(FIG, "fig7_mitigation_delta.png")
-    plt.savefig(pdfp, bbox_inches="tight", pad_inches=0.04)
-    plt.savefig(pngp, bbox_inches="tight", pad_inches=0.04, dpi=300)
-    plt.close()
-    print(f"[ok] {pdfp}")
-
 
 if __name__ == "__main__":
     main()

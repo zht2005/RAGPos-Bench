@@ -275,11 +275,8 @@ def phase_b():
         save_jsonl(results, out_path)
 
 
-def aggregate():
-    """Compute per-model Acc, PBR, CAR, EAR, CEU on the 300-sample subset
-    for original baseline (from outputs/parsed_predictions/) and for each
-    mitigation condition. Apply paired bootstrap.
-    """
+def _aggregate_pre_review():
+    """Retained only to document the pre-review metric calculation."""
     insts = {i["instance_id"]: i for i in load_jsonl(os.path.join(BASE, "data/eval_instances.jsonl"))}
     subset = select_subset(insts.values())
     subset_iids_v4 = {iv4 for _, iv4, _ in subset}
@@ -395,7 +392,7 @@ def aggregate():
 
     out_csv = os.path.join(OUT_DIR, "mitigation_summary.csv")
     with open(out_csv, "w", newline="") as f:
-        w = csv.writer(f)
+        w = csv.writer(f, lineterminator="\n")
         w.writerow(["model", "condition", "n", "Acc", "PBR", "CAR", "EAR", "CEU"])
         for r in rows:
             base = r["baseline"]
@@ -414,6 +411,12 @@ def aggregate():
                             f"{sh['EAR']:.4f}", f"{sh['CEU']:.4f}"])
     print(f"[ok] summary -> {out_csv}")
     return rows
+
+
+def aggregate():
+    """Recompute the final, paired mitigation metrics used in the paper."""
+    from mitigation_analysis import main as analyze_mitigation
+    return analyze_mitigation()
 
 
 def main():

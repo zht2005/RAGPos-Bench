@@ -6,6 +6,7 @@ __pycache__/
 .Python
 
 # Environment
+.venv/
 .env
 .env.*
 *.key
@@ -32,4 +33,5 @@ Thumbs.db
 
 # Backups / archive
 *.503backup.jsonl
+*_OLD_BACKUP.csv
 archive_unused/

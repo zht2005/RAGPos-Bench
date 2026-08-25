@@ -92,7 +92,7 @@ def main():
 
     ax.set_xticks(x)
     ax.set_xticklabels(VLABELS)
-    ax.set_xlabel("Slot of the Correct Evidence", labelpad=6)
+    ax.set_xlabel("Released Layout (Gold-Evidence Slot)", labelpad=6)
     ax.set_ylabel("Accuracy", labelpad=6)
     ax.set_yticks([0.0, 0.2, 0.4, 0.6, 0.8])
     ax.set_ylim(0.0, 0.85)
@@ -105,8 +105,8 @@ def main():
     ax.set_axisbelow(True)
 
     ax.set_title(
-        "Position sensitivity: accuracy as the correct evidence moves "
-        r"Front $\rightarrow$ End ($\star$ = paired-bootstrap significant, $p<0.05$)",
+        "Accuracy across V1-V3 layouts "
+        r"($\star$ = significant V1-to-V3 decline, $p<0.01$)",
         pad=10, color="#222222",
     )
 

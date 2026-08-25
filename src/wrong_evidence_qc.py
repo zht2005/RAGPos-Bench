@@ -4,9 +4,7 @@ Phase A is run unconditionally and produces conservative pass rates.
 Phase B is gated on OPENAI_API_KEY being set in the environment.
 
 Inputs:
-  data/eval_instances.jsonl   (each instance carries question, gold_answer,
-                               6 evidence slots, correct_evidence_position,
-                               wrong_evidence_position)
+  data/base_samples_with_wrong.jsonl
 
 Outputs:
   outputs/metrics/wrong_evidence_qc_local.csv     -- per-sample local QC results
@@ -29,6 +27,7 @@ sys.path.insert(0, os.path.join(BASE, "src"))
 from utils import load_jsonl, normalize_answer  # noqa
 
 DATA_PATH = os.path.join(BASE, "data/eval_instances.jsonl")
+BASE_DATA_PATH = os.path.join(BASE, "data/base_samples_with_wrong.jsonl")
 METRICS_DIR = os.path.join(BASE, "outputs/metrics")
 ASSETS_DIR = os.path.join(BASE, "paper_assets")
 os.makedirs(METRICS_DIR, exist_ok=True)
@@ -37,31 +36,26 @@ os.makedirs(ASSETS_DIR, exist_ok=True)
 ENTITY_RE = re.compile(r"\b([A-Z][A-Za-z'’\-]{2,}(?:\s+[A-Z][A-Za-z'’\-]{2,}){0,4})\b")
 
 
-def deduplicate(instances):
-    """Wrong evidence is reused across all 6 variants of one base sample.
-    Pick one representative instance per sample_id (the one with the
-    correct_front variant) and harvest e_dagger from there.
+def load_nonempty_wrong_samples():
+    """Read construction-stage fields and exclude failed generations.
+
+    Recovering ``wrong_evidence`` from a rendered v1 layout is unsafe: for 61
+    failed generations the designated slot was filled by a normal distractor.
     """
-    by_sample = {}
-    for inst in instances:
-        sid = inst["sample_id"]
-        if sid in by_sample:
+    samples = []
+    for base in load_jsonl(BASE_DATA_PATH):
+        wrong = str(base.get("wrong_evidence") or "").strip()
+        if not wrong:
             continue
-        wrong_pos = inst.get("wrong_evidence_position")
-        if not wrong_pos:
-            continue
-        wrong_text = inst["evidences"].get(wrong_pos, "").strip()
-        if not wrong_text:
-            continue
-        by_sample[sid] = {
-            "sample_id": sid,
-            "source": inst.get("source", "unknown"),
-            "question": inst["question"],
-            "gold_answer": inst["gold_answer"],
-            "wrong_evidence": wrong_text,
-            "correct_evidence": inst["evidences"].get(inst["correct_evidence_position"], ""),
-        }
-    return list(by_sample.values())
+        samples.append({
+            "sample_id": base["sample_id"],
+            "source": base.get("source", "unknown"),
+            "question": base["question"],
+            "gold_answer": base["gold_answer"],
+            "wrong_evidence": wrong,
+            "correct_evidence": base.get("correct_evidence", ""),
+        })
+    return samples
 
 
 def check_plausible(text):
@@ -108,8 +102,7 @@ def check_contradiction(gold, wrong):
 
 
 def phase_a():
-    instances = load_jsonl(DATA_PATH)
-    samples = deduplicate(instances)
+    samples = load_nonempty_wrong_samples()
     rows = []
     for s in samples:
         p_ok, p_why = check_plausible(s["wrong_evidence"])
@@ -125,7 +118,9 @@ def phase_a():
         })
     out = os.path.join(METRICS_DIR, "wrong_evidence_qc_local.csv")
     with open(out, "w", newline="") as f:
-        w = csv.DictWriter(f, fieldnames=list(rows[0].keys()))
+        w = csv.DictWriter(
+            f, fieldnames=list(rows[0].keys()), lineterminator="\n"
+        )
         w.writeheader(); w.writerows(rows)
 
     n = len(rows)
@@ -156,7 +151,7 @@ def write_inspection_sample(rows, samples, n=100):
     pick = list(pass_rows) + list(fail_rows)
     out = os.path.join(ASSETS_DIR, "wrong_evidence_qc_sample100.csv")
     with open(out, "w", newline="") as f:
-        w = csv.writer(f)
+        w = csv.writer(f, lineterminator="\n")
         w.writerow(["sample_id", "source", "question", "gold_answer",
                     "wrong_evidence", "all_pass_local",
                     "plausible_reason", "topical_reason", "contradiction_reason",
@@ -181,8 +176,24 @@ def phase_b(rows_a, samples, summary):
     """
     api_key = os.environ.get("OPENAI_API_KEY")
     if not api_key:
-        print("\n[skip] Phase B: OPENAI_API_KEY not set")
-        return None
+        existing = os.path.join(METRICS_DIR, "wrong_evidence_qc_llm.csv")
+        if not os.path.exists(existing):
+            print("\n[skip] Phase B: OPENAI_API_KEY not set and no saved audit exists")
+            return None
+        valid_ids = {sample["sample_id"] for sample in samples}
+        with open(existing, newline="", encoding="utf-8") as stream:
+            rows_b = [row for row in csv.DictReader(stream)
+                      if row["sample_id"] in valid_ids]
+        with open(existing, "w", newline="", encoding="utf-8") as stream:
+            writer = csv.DictWriter(
+                stream, fieldnames=list(rows_b[0]), lineterminator="\n"
+            )
+            writer.writeheader()
+            writer.writerows(rows_b)
+        summarize_llm_rows(rows_b, summary)
+        print(f"\n[reuse] Phase B: {len(rows_b)} saved judgments after "
+              "excluding failed wrong-evidence generations")
+        return rows_b
     try:
         from openai import OpenAI
     except Exception as e:
@@ -274,29 +285,13 @@ WRONG EVIDENCE: {e}
 
     out = os.path.join(METRICS_DIR, "wrong_evidence_qc_llm.csv")
     with open(out, "w", newline="") as f:
-        w = csv.DictWriter(f, fieldnames=list(rows_b[0].keys()))
+        w = csv.DictWriter(
+            f, fieldnames=list(rows_b[0].keys()), lineterminator="\n"
+        )
         w.writeheader(); w.writerows(rows_b)
     print(f"\n[ok] LLM-audit -> {out}")
 
-    n = len(rows_b)
-    for k in ("topical", "plausible", "contradictory"):
-        summary[f"llm_{k}_yes"] = counts[k]["yes"] / n
-        summary[f"llm_{k}_no"] = counts[k]["no"] / n
-        summary[f"llm_{k}_unclear"] = counts[k]["unclear"] / n
-
-    pass_subset = [r for r in rows_b if r["from_phase_a"] == "pass-random"]
-    if pass_subset:
-        all_yes = sum(1 for r in pass_subset
-                      if r["topical_llm"] == "yes" and r["plausible_llm"] == "yes"
-                      and r["contradictory_llm"] == "yes")
-        summary["llm_audit_pass_rate_on_phaseA_pass"] = all_yes / len(pass_subset)
-
-    fail_subset = [r for r in rows_b if r["from_phase_a"] == "fail"]
-    if fail_subset:
-        any_yes = sum(1 for r in fail_subset
-                      if r["topical_llm"] == "yes" and r["plausible_llm"] == "yes"
-                      and r["contradictory_llm"] == "yes")
-        summary["llm_audit_recovers_phaseA_fail"] = any_yes / len(fail_subset)
+    summarize_llm_rows(rows_b, summary)
 
     print("\n=== Phase B aggregates ===")
     for k, v in summary.items():
@@ -305,10 +300,37 @@ WRONG EVIDENCE: {e}
     return rows_b
 
 
+def summarize_llm_rows(rows_b, summary):
+    n = len(rows_b)
+    if not n:
+        return
+    for key in ("topical", "plausible", "contradictory"):
+        values = [row[f"{key}_llm"] for row in rows_b]
+        for verdict in ("yes", "no", "unclear"):
+            summary[f"llm_{key}_{verdict}"] = values.count(verdict) / n
+
+    pass_subset = [row for row in rows_b
+                   if row["from_phase_a"] == "pass-random"]
+    if pass_subset:
+        all_yes = sum(all(row[f"{key}_llm"] == "yes" for key in
+                          ("topical", "plausible", "contradictory"))
+                      for row in pass_subset)
+        summary["llm_audit_pass_rate_on_phaseA_pass"] = (
+            all_yes / len(pass_subset)
+        )
+
+    fail_subset = [row for row in rows_b if row["from_phase_a"] == "fail"]
+    if fail_subset:
+        all_yes = sum(all(row[f"{key}_llm"] == "yes" for key in
+                          ("topical", "plausible", "contradictory"))
+                      for row in fail_subset)
+        summary["llm_audit_recovers_phaseA_fail"] = all_yes / len(fail_subset)
+
+
 def write_summary(summary):
     out = os.path.join(METRICS_DIR, "wrong_evidence_qc_summary.csv")
     with open(out, "w", newline="") as f:
-        w = csv.writer(f); w.writerow(["metric", "value"])
+        w = csv.writer(f, lineterminator="\n"); w.writerow(["metric", "value"])
         for k, v in summary.items():
             w.writerow([k, f"{v:.4f}" if isinstance(v, float) else v])
     print(f"\n[ok] summary -> {out}")

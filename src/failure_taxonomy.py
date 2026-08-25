@@ -2,9 +2,8 @@
 
 Classifies every raw prediction record (7 models x 15,000 instances) into
 exactly one of {ok, api_error, model_empty, unparseable} via
-utils.classify_raw_output, broken down by variant code (V1..V6). Also
-reconciles the taxonomy against the count of empty parsed answers in
-outputs/parsed_predictions/ (known figure: 27,867 / 105,000 = 26.5%).
+utils.classify_raw_output, broken down by variant code (V1..V6). It also
+reconciles the taxonomy against empty parsed answers.
 """
 import csv
 import os
@@ -18,9 +17,6 @@ from utils import (load_jsonl, classify_raw_output, VARIANT_CODES,
 
 BASE_DIR = os.path.join(os.path.dirname(__file__), '..')
 VARIANT_CODE_ORDER = ("V1", "V2", "V3", "V4", "V5", "V6")
-KNOWN_EMPTY_PARSED = 27_867
-
-
 def main():
     inst_variant = {}
     for inst in load_jsonl(os.path.join(BASE_DIR, 'data', 'eval_instances.jsonl')):
@@ -67,7 +63,9 @@ def main():
     out_path = os.path.join(BASE_DIR, 'outputs', 'metrics', 'failure_taxonomy.csv')
     os.makedirs(os.path.dirname(out_path), exist_ok=True)
     with open(out_path, 'w', newline='') as f:
-        writer = csv.DictWriter(f, fieldnames=list(rows[0].keys()))
+        writer = csv.DictWriter(
+            f, fieldnames=list(rows[0].keys()), lineterminator="\n"
+        )
         writer.writeheader()
         writer.writerows(rows)
     print(f"Failure taxonomy saved to {out_path} ({len(rows)} rows)\n")
@@ -100,7 +98,6 @@ def main():
     print("\nReconciliation:")
     print(f"  empty parsed answers observed : {empty_parsed} / {n_parsed} "
           f"({100.0 * empty_parsed / n_parsed:.1f}%)")
-    print(f"  known reference figure        : {KNOWN_EMPTY_PARSED} (26.5%)")
     print(f"  taxonomy non-ok records       : {non_ok} "
           f"(api_error {grand[RECORD_API_ERROR]} + model_empty {grand[RECORD_MODEL_EMPTY]}"
           f" + unparseable {grand[RECORD_UNPARSEABLE]})")
@@ -108,9 +105,6 @@ def main():
     print("  (positive => 'ok' records with an empty answer field; negative =>\n"
           "   non-ok records whose parsed answer is non-empty, e.g. unparseable\n"
           "   raws stored verbatim as the answer with parse_error=True)")
-    if empty_parsed != KNOWN_EMPTY_PARSED:
-        print(f"  NOTE: observed empty-parsed count differs from reference by "
-              f"{empty_parsed - KNOWN_EMPTY_PARSED}")
 
 
 if __name__ == "__main__":

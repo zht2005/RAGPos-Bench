@@ -1,6 +1,6 @@
 {
   "case1_position_bias": {
-    "story": "Story 1: Evidence Position Bias exists",
+    "story": "Story 1: Evidence-layout sensitivity example",
     "model_focus": "DeepSeek-Chat",
     "v_correct_front": {
       "instance_id": "musique_0523_correct_front",

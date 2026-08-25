@@ -24,12 +24,14 @@ def parse_single(raw_record):
         result["confidence"] = 0
         result["brief_reason"] = ""
     else:
-        result["answer"] = str(parsed.get("answer", ""))
+        answer = parsed.get("answer")
+        result["answer"] = "" if answer is None else str(answer)
         result["selected_evidence_ids"] = parsed.get("selected_evidence_ids", [])
         result["has_conflict"] = bool(parsed.get("has_conflict", False))
         result["abstained"] = bool(parsed.get("abstained", False))
         result["confidence"] = int(parsed.get("confidence", 0))
-        result["brief_reason"] = str(parsed.get("brief_reason", ""))
+        reason = parsed.get("brief_reason")
+        result["brief_reason"] = "" if reason is None else str(reason)
     return result
 
 

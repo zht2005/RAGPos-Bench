@@ -13,6 +13,10 @@ Pure string heuristics, deterministic, no API calls:
 Output: data/wrong_claims.jsonl with
   {sample_id, gold, candidates (ranked, all survivors), status}
 status = "decided" when at least one candidate survives, else "undecidable".
+
+The extraction must use ``data/base_samples_with_wrong.jsonl``. Reconstructing
+from a rendered layout is intentionally disallowed because layout text may not
+preserve every construction-stage field exactly.
 """
 import json
 import os
@@ -110,8 +114,16 @@ def question_keywords(question):
             if len(t) > 2 and t.lower() not in STOPWORDS}
 
 
+def load_samples():
+    base_path = os.path.join(BASE_DIR, 'data', 'base_samples_with_wrong.jsonl')
+    if not os.path.exists(base_path):
+        raise FileNotFoundError(
+            f'{base_path} is required to reproduce the released wrong claims')
+    return load_jsonl(base_path)
+
+
 def main():
-    samples = load_jsonl(os.path.join(BASE_DIR, 'data', 'base_samples_with_wrong.jsonl'))
+    samples = load_samples()
     out = []
     n_decided = n_undecidable = 0
 
@@ -165,6 +177,7 @@ def main():
         else:
             n_undecidable += 1
         out.append({"sample_id": s["sample_id"], "gold": gold,
+                    "has_nonempty_wrong_evidence": bool(wrong.strip()),
                     "candidates": candidates, "status": status})
 
     out_path = os.path.join(BASE_DIR, 'data', 'wrong_claims.jsonl')

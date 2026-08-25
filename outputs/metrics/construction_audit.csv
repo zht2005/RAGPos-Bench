@@ -1,0 +1,8 @@
+check,count,interpretation
+base_samples,2500,all released base samples
+nonempty_wrong_evidence,2439,eligible planted-conflict samples
+empty_wrong_evidence,61,generation failures; designated slots contain distractors
+v1_v3_same_evidence_multiset,583,"same six passage texts, not necessarily same distractor slots"
+v4_v5_same_evidence_multiset,574,includes samples without a planted wrong passage
+v4_v5_matched_nonempty_wrong,513,matched-content sensitivity subset
+v4_v5_only_key_swap,21,all other evidence slots identical
