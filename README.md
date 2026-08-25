@@ -111,7 +111,9 @@ RAGPos-Bench/
 |   `-- reasoner_pilot/                 # 2,048-token Reasoner pilot
 |-- figures/
 |   |-- fig1_framework_overview.*
-|   `-- fig3_position_slope.*
+|   |-- fig3_position_slope.*
+|   |-- fig5_deepseek_radar.*
+|   `-- fig7_mitigation_delta.*
 |-- paper_assets/
 |   |-- metrics_specification.md
 |   |-- case_studies.json
@@ -141,6 +143,8 @@ python src/construction_audit.py
 python src/psr_audit.py
 python src/mitigation_analysis.py
 python src/beautify_fig3.py
+python src/beautify_fig5.py
+python src/plot_mitigation_delta.py
 python src/verify_release.py
 ```
 
