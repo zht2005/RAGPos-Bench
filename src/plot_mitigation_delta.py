@@ -17,7 +17,7 @@ INPUT = os.path.join(BASE, "outputs", "mitigation", "mitigation_delta.csv")
 FIGURES = os.path.join(BASE, "figures")
 
 MODELS = (
-    ("gpt-5.4-medium", "GPT-5.4-medium", "#4C78A8"),
+    ("gpt-5.4-medium", "GPT-5.4", "#4C78A8"),
     ("deepseek-chat", "DeepSeek-Chat", "#72B7B2"),
     ("gpt-5.4-mini", "GPT-5.4-mini", "#54A24B"),
     ("claude-haiku-4-5-20251001", "Claude-Haiku-4.5", "#B279A2"),
@@ -71,7 +71,7 @@ def main():
     ax.set_xticklabels([label for _, label, _ in METRICS])
     ax.set_ylabel(r"$\Delta$ (conflict-aware $-$ baseline) -- higher is better")
     ax.set_title(
-        "Conflict-aware prompting: per-model improvement over baseline\n"
+        "Observed differences between prompt conditions\n"
         r"(* = two-sided paired-bootstrap significant at $p<0.05$)"
     )
     ax.grid(axis="y", alpha=0.22)

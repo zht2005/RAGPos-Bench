@@ -21,7 +21,7 @@ CSV = os.path.join(BASE, "outputs/metrics/by_variant_metrics.csv")
 FIG = os.path.join(BASE, "figures")
 
 DISPLAY = [
-    ("gpt-5.4-medium",            "GPT-5.4-medium",     "#4C78A8", False),
+    ("gpt-5.4-medium",            "GPT-5.4",            "#4C78A8", False),
     ("deepseek-chat",             "DeepSeek-Chat",      "#72B7B2", True),
     ("gpt-5.4-mini",              "GPT-5.4-mini",       "#54A24B", True),
     ("claude-haiku-4-5-20251001", "Claude-Haiku-4.5",   "#B279A2", True),
