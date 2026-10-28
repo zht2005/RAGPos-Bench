@@ -1,4 +1,4 @@
-"""Released-v1 layout comparisons: paired bootstrap over sample ids.
+"""Evaluated layout comparisons: paired bootstrap over sample ids.
 
 For each model and each contrast (V1_vs_V3, V1_vs_V4, V4_vs_V5) we pair the
 per-sample correctness indicators by sample_id, compute the observed mean paired
@@ -6,7 +6,7 @@ difference D, and bootstrap-resample sample_ids (B=10,000, seed 42) to obtain
 (a) a two-sided p-value with the bootstrap distribution centred at zero, and
 (b) a 95% percentile CI of D. Paired resampling also yields CIs for each arm.
 
-These full-set comparisons are paired by question, but the released v1
+These full-set comparisons are paired by question, but the layout
 generator independently sampled/reordered distractors across layouts. They
 must not be interpreted as content-controlled causal effects. Run
 ``construction_audit.py`` for the matched-content V4/V5 sensitivity analysis.

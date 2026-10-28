@@ -8,9 +8,9 @@
 
 RAGPos-Bench is a diagnostic benchmark for retrieval-augmented generation
 (RAG). It contains 2,500 base samples from HotpotQA, MuSiQue, and SQuAD and six
-released layouts per sample, producing 15,000 evaluation instances.
+evidence layouts per sample, producing 15,000 evaluation instances.
 
-The released evaluation contains 105,000 real API predictions from seven model
+The evaluation contains 105,000 prediction records from seven model
 configurations queried in June 2026:
 
 - `gpt-5.4-medium`
@@ -21,15 +21,14 @@ configurations queried in June 2026:
 - `deepseek-reasoner`
 - `gemini-2.5-flash`
 
-## Released-v1 Construction Notice
+## Layout Construction and Comparable Pairs
 
-An audit performed for the camera-ready release found that the original v1
-layout generator independently shuffled five distractors and selected four for
-each layout. The released variants share the same base question, gold passage,
+The layout generator independently shuffles the distractor pool and selects
+passages for each layout. Variants share the same base question, gold passage,
 and (when generation succeeded) planted wrong passage, but most do **not** have
-the same realized distractor content or ordering. Therefore the full-set
-V1/V3 and V4/V5 comparisons are descriptive layout comparisons, not isolated
-causal estimates of gold-passage position or conflict order.
+the same realized distractor content or ordering. Full-set V1/V3 and V4/V5
+comparisons therefore describe complete layout differences; they do not isolate
+gold-passage position or conflict order.
 
 - 2,439/2,500 base samples have non-empty planted wrong evidence.
 - 574/2,500 V4/V5 pairs have the same six-passage multiset; 513 also have a
@@ -37,18 +36,17 @@ causal estimates of gold-passage position or conflict order.
 - Only 21/2,500 V4/V5 pairs differ solely by swapping E2 and E5 while all four
   other slots remain identical.
 
-The released data and predictions are retained unchanged for reproducibility.
-`src/construction_audit.py` reproduces these counts and the 513-pair
+`src/construction_audit.py` computes these counts and the 513-pair
 matched-content sensitivity analysis. `src/build_controlled_variants.py`
-implements a corrected construction for a future model rerun; v1 predictions
-must not be reused with those new prompts. Three valid samples contain fewer
-than five distractors; the corrected builder deterministically cycles their
-existing distractors and records the number of reused slots in
+constructs content-fixed layouts for future model runs; these layouts require
+new predictions. Three samples contain fewer than five distractors; the
+content-fixed builder deterministically cycles their existing distractors and
+records the number of reused slots in
 `reused_distractor_count` instead of inventing new evidence.
 
 ## Important Evaluation Notes
 
-- Accuracy treats API errors, empty answers, and unparseable outputs as errors.
+- Accuracy treats service failures, empty answers, and unparseable outputs as errors.
 - PBR, CAR, EAR, and CEU are conditional on valid, non-empty parsed responses.
 - Overall, 32.6% of records are invalid under the shared 512-token JSON-output
   protocol. Valid-response rates vary substantially by model.
@@ -87,12 +85,14 @@ Key findings under the fixed protocol:
    Claude-Haiku-4.5 is significant at `p < 0.01` (V4 minus V5 = `+0.072`).
    Because distractor slots can still differ, this is an overall layout effect,
    not an isolated conflict-order estimate.
-3. MuSiQue is the hardest source for all seven models, averaging about 0.30
-   below SQuAD.
+3. MuSiQue is the hardest source for all seven models, averaging about 0.25
+   below SQuAD (0.312 vs. 0.558 accuracy; difference 0.246).
 4. Between 7.8% and 54.6% of correct valid answers on eligible conflict variants are
    produced without a reported conflict flag.
-5. In the mitigation utility study, conflict-aware prompting significantly
-   raises accuracy for six models and CAR for five. V4 wrong-claim adoption and
+5. In the mitigation utility study, measured end-to-end accuracy is
+   significantly higher for six models and CAR for five. Response validity
+   changes contribute to some accuracy differences, and Gemini's baseline and
+   intervention use different serving conditions. V4 wrong-claim adoption and
    EAR fall significantly for DeepSeek-Chat and GPT-5.4-mini.
 
 ## Repository Layout
@@ -104,8 +104,8 @@ RAGPos-Bench/
 |   |-- eval_instances.jsonl           # 15,000 benchmark instances
 |   `-- wrong_claims.jsonl              # deterministic wrong-claim candidates
 |-- outputs/
-|   |-- raw_predictions/                # 7 x 15,000 original API outputs
-|   |-- parsed_predictions/             # corrected structured predictions
+|   |-- raw_predictions/                # 7 x 15,000 saved model outputs
+|   |-- parsed_predictions/             # structured predictions
 |   |-- metrics/                        # paper-aligned aggregate results
 |   |-- mitigation/                     # mitigation runs and paired deltas
 |   `-- reasoner_pilot/                 # 2,048-token Reasoner pilot
@@ -121,7 +121,7 @@ RAGPos-Bench/
 `-- src/                               # construction and evaluation pipeline
 ```
 
-## Reproducing the Released Metrics
+## Reproducing the Reported Metrics
 
 Create an environment and install dependencies:
 
@@ -131,7 +131,7 @@ source .venv/bin/activate
 pip install -r requirements.txt
 ```
 
-Rebuild every paper-aligned metric from the released raw predictions:
+Rebuild every paper-aligned metric from the saved raw predictions:
 
 ```bash
 python src/parse_outputs.py

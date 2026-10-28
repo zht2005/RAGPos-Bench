@@ -1,10 +1,10 @@
-"""Reproduce the released v1 layouts (15,000 evaluation instances).
+"""Construct the evaluated layouts (15,000 evaluation instances).
 
-Important: v1 independently shuffles a five-passage distractor pool for each
+The generator independently shuffles a five-passage distractor pool for each
 layout and uses only four of those passages when a wrong passage is present.
 The resulting variants share a base sample, but they are not generally
-content-identical. Use ``build_controlled_variants.py`` for the corrected
-content-controlled construction.
+content-identical. Use ``build_controlled_variants.py`` to construct
+content-fixed layouts for future model inference.
 """
 import json
 import os
@@ -94,7 +94,7 @@ def make_instance(sample, variant_name, slots, correct_pos, wrong_pos):
 
 
 def main():
-    print("WARNING: reproducing the released v1 construction; distractors are "
+    print("Constructing the evaluated layouts; distractors are "
           "independently sampled per layout.")
     wrong_path = os.path.join(BASE_DIR, 'data', 'base_samples_with_wrong.jsonl')
     base_path = os.path.join(BASE_DIR, 'data', 'base_samples.jsonl')

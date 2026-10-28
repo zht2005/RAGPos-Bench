@@ -1,12 +1,12 @@
 # Metric Specification
 
-This document records the definitions used in the PRICAI 2026 camera-ready
-paper and in the default evaluation scripts.
+This document records the definitions used in the PRICAI 2026 paper and the
+default evaluation scripts.
 
 ## Response Validity
 
-A prediction is valid when it contains a parseable, non-empty answer. API
-errors, empty model outputs, JSON with `answer: null`, and unparseable outputs
+A prediction is valid when it contains a parseable, non-empty answer. Service
+failures, empty model outputs, JSON with `answer: null`, and unparseable outputs
 are invalid.
 
 - Accuracy and PSR include all 15,000 instances per model. Invalid predictions
@@ -29,8 +29,8 @@ partial credit for multi-span answers.
 ### Position-Layout Sensitivity Rate (PSR, lower is better)
 
 For each base sample, PSR records whether the binary correctness indicator
-changes across released-v1 layouts V1, V2, and V3, where the correct passage
-appears at E1, E3, and E6. The v1 generator also independently samples and
+changes across evaluated layouts V1, V2, and V3, where the correct passage
+appears at E1, E3, and E6. The generator also independently samples and
 orders distractors for each layout, so this is a position-layout sensitivity
 measure rather than a pure position effect.
 
@@ -75,12 +75,13 @@ position in `selected_evidence_ids`.
 CAR and CEU are schema-level, self-reported diagnostics. They do not
 independently verify grounding or the model's reasoning process.
 
-## Construction Audit and Significance Tests
+## Layout Construction and Significance Tests
 
-The released v1 generator independently shuffled five distractors and selected
-four for each layout. Consequently, most paired layouts do not contain the same
-realized evidence multiset. The audit in
-`outputs/metrics/construction_audit.csv` finds:
+The layout generator independently shuffles a five-passage distractor pool
+for each layout. Four distractors fill the remaining slots in V1--V5 when
+wrong evidence is present; V6 uses five. Consequently, most paired layouts do
+not contain the same realized evidence multiset. The construction statistics in
+`outputs/metrics/construction_audit.csv` show:
 
 - 2,439/2,500 samples have non-empty planted wrong evidence;
 - 574/2,500 V4/V5 pairs have the same evidence multiset;
@@ -90,7 +91,7 @@ realized evidence multiset. The audit in
 
 Full-set V1/V3, V1/V4, and V4/V5 comparisons use a two-sided paired bootstrap
 over 2,500 aligned base samples with 10,000 resamples and seed 42, but they are
-descriptive comparisons of the released layouts and not content-controlled
+descriptive comparisons of the evaluated layouts and not content-controlled
 causal tests. `outputs/metrics/content_matched_v4_v5.csv` reports the same test
 on the 513 V4/V5 pairs with matching evidence multisets and non-empty wrong
 evidence. Even there, distractor slot order can differ, so the test identifies

@@ -1,14 +1,14 @@
-"""Build corrected content-controlled layouts for a future rerun.
+"""Build content-fixed layouts for future model inference.
 
 V1--V5 are permutations of one fixed six-passage multiset per base sample.
 V4/V5 differ only by swapping the correct and planted-wrong passages at E2/E5.
 The script refuses samples without a generated wrong passage instead of
 silently filling the designated wrong slot with an ordinary distractor.
-For the three released samples with fewer than five distractors, existing
+For the three samples with fewer than five distractors, existing
 distractors are deterministically cycled so that every layout remains valid.
 
-The released v1 predictions do not correspond to this output. New model
-inference is required before reporting results on the controlled layouts.
+The saved predictions do not correspond to this output. New model inference
+is required before reporting results on these layouts.
 """
 
 import argparse

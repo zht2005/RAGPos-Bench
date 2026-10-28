@@ -1,4 +1,4 @@
-"""Audit released-v1 layout comparability and run a matched-content check."""
+"""Compute layout comparability and matched-content sensitivity."""
 
 import csv
 import json

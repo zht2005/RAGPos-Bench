@@ -1,4 +1,4 @@
-"""Validate released-v1 data and report its known construction limitations."""
+"""Validate benchmark data and report content-matching counts."""
 
 import os
 import sys
@@ -107,13 +107,13 @@ def main():
 
     print("Structural validation passed: 2,500 base samples, 15,000 unique "
           "instances, six variants per sample, and consistent declared positions.")
-    print("Released-v1 construction audit:")
+    print("Layout comparison counts:")
     print(f"- non-empty planted wrong evidence: {len(nonempty_wrong)}/2,500")
     print(f"- V4/V5 with the same evidence multiset: "
           f"{len(same_multiset_v4_v5)}/2,500")
     print(f"- V4/V5 differing only at E2/E5 with non-empty wrong evidence: "
           f"{len(only_key_swap_v4_v5)}/2,500")
-    print("These are documented release limitations, not validation failures.")
+    print("These counts describe which paired layouts hold passage content fixed.")
 
 
 if __name__ == "__main__":

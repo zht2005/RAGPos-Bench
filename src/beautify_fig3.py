@@ -24,8 +24,8 @@ DISPLAY = [
     ("gpt-5.4-medium",            "GPT-5.4-medium",     "#4C78A8", False),
     ("deepseek-chat",             "DeepSeek-Chat",      "#72B7B2", True),
     ("gpt-5.4-mini",              "GPT-5.4-mini",       "#54A24B", True),
-    ("claude-haiku-4-5-20251001", "Claude-Haiku-4.5",   "#B279A2", False),
-    ("claude-sonnet-4-6",         "Claude-Sonnet-4.6",  "#9D755D", False),
+    ("claude-haiku-4-5-20251001", "Claude-Haiku-4.5",   "#B279A2", True),
+    ("claude-sonnet-4-6",         "Claude-Sonnet-4.6",  "#9D755D", True),
     ("deepseek-reasoner",         "DeepSeek-Reasoner",  "#F2A65A", False),
     ("gemini-2.5-flash",          "Gemini-2.5-Flash",   "#E45756", True),
 ]
@@ -92,7 +92,7 @@ def main():
 
     ax.set_xticks(x)
     ax.set_xticklabels(VLABELS)
-    ax.set_xlabel("Released Layout (Gold-Evidence Slot)", labelpad=6)
+    ax.set_xlabel("Gold-Evidence Position", labelpad=6)
     ax.set_ylabel("Accuracy", labelpad=6)
     ax.set_yticks([0.0, 0.2, 0.4, 0.6, 0.8])
     ax.set_ylim(0.0, 0.85)
@@ -106,7 +106,7 @@ def main():
 
     ax.set_title(
         "Accuracy across V1-V3 layouts "
-        r"($\star$ = significant V1-to-V3 decline, $p<0.01$)",
+        r"($\star$ = significant V1-to-V3 difference, $p<0.01$)",
         pad=10, color="#222222",
     )
 

@@ -18,7 +18,7 @@ VARIANT_ORDER = ("correct_front", "correct_middle", "correct_end",
                  "conflict_before_correct", "correct_before_conflict",
                  "distractor_dominant")
 # Variants intended to contain the planted wrong evidence and the correct
-# evidence. In released v1, 61 generation failures have no planted wrong text;
+# evidence. For 61 generation failures, there is no planted wrong text;
 # metric code excludes those sample ids from conflict-specific denominators.
 CONFLICT_VARIANTS = ("conflict_before_correct", "correct_before_conflict")
 
